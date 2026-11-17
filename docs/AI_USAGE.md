@@ -39,16 +39,33 @@
 | 11-17 | double-s846 | DeepSeek Harness | "为外刊学习助手搭 Vite + React + TS 工程，写数据契约与存储层" | `package.json`、`tsconfig*.json`、`vite.config.ts`、`eslint.config.js`、`.gitignore` | ① TypeScript 拉到 7.0.2 与 `typescript-eslint`（要求 <6.1）冲突，人工降到 5.9 并锁定 `~5.9`；② 包管理器从计划的 pnpm 改为 npm（评委环境 pnpm 不一定装，npm 自带）；③ 去掉 URL 自动抓取方案（跨域要代理，与"零配置"冲突） |
 | 11-17 | double-s846 | DeepSeek Harness | "设计全组共用的 TypeScript 数据契约，避免四个人类型冲突" | `src/types.ts` | 人工逐条复核字段语义：把 `glossSource` 从可选改为**必填**（强制界面展示释义来源，服务 AI 透明化评分）；把 `box` 从 `number` 收紧为 `0\|1\|2\|3\|4\|5` 字面量联合，让越界在编译期就报错 |
 | 11-17 | double-s846 | DeepSeek Harness | "写 localStorage 封装，要能版本化、能订阅、能导出备份" | `src/lib/storage.ts` | 人工增加 `importSnapshot()` 的三个校验分支（非本应用备份 / 版本过高 / 字段缺失），这是 AI 初稿里没有的失败路径 |
-| 11-17 | double-s846 | DeepSeek Harness | "写英文切段切句切词，要保留字符偏移" | `src/lib/tokenize.ts` | ① 人工补缩写表（AI 初稿只有 Mr./Dr.，补到 40+ 条含 U.S./e.g./a.m.）；② 修 `no-useless-escape`：字符组内 `\[` 改为直接放 `[`；③ 删掉一条重复的 ing 还原规则（`deteriorating` 会被还原成 `deteriorat`，补了 e 回退分支） |
+| 11-17 | double-s846 | DeepSeek Harness | "写英文切段切句切词，要保留字符偏移" | `src/lib/tokenize.ts` | ① 人工补缩写表（AI 初稿只有 Mr./Dr.，补到 40+ 条含 U.S./e.g./a.m.）；② 修 `no-useless-escape`：字符组内 `\[` 改为直接放 `[`；③ **重写词形还原**：AI 初稿用"第一条匹配即返回"的正则表，导致 `deteriorating → deteriorat`（回填 `e` 的规则永远走不到），人工改成 `lemmaCandidates()` 有序候选链，由 `dict.ts` 逐个试词表；④ 修掉 `cities` 多产生 `citie` 候选的 bug |
 | 11-17 | double-s846 | DeepSeek Harness | "查词如何在没有 API key 的情况下也能用？给出降级方案" | `src/lib/dict.ts`、`src/data/glossary/core.json` | ① 决定 ①②③ 三级降级顺序（AI 建议本地→付费，人工改为本地→免费→付费，因为评委没有付费 key）；② 为 `fetch` 加 `AbortController` 3.5s 超时（AI 初稿没有超时，弱网会一直转圈）；③ `fromPaidApi()` 故意留空并写明原因：签名密钥不能进前端 bundle |
 | 11-17 | double-s846 | DeepSeek Harness | "写间隔重复与日历聚合工具" | `src/lib/srs.ts` | 人工把 `dayKey()` 从 `toISOString().slice(0,10)` 改为本地时区拼接 —— 原写法在东八区凌晨 0–8 点会把复习记录算到前一天 |
 | 11-17 | double-s846 | DeepSeek Harness | "写阅读器、查词气泡、导入弹窗、生词本抽屉、设置菜单" | `src/features/**`、`src/App.tsx`、`src/styles/**` | ① React 19 新规则 `react-hooks/set-state-in-effect` 报错 3 处，人工重构：`useCollection` 改为惰性初始化 + 只订阅、`WordPopover` 改为父级 `key` 重建、`ParsePanel` 改为 `useMemo` 派生；② 把 `React.MouseEvent` 的全局命名空间引用改为 `import type { MouseEvent as ReactMouseEvent }`（`verbatimModuleSyntax` 下会编译失败）；③ 导入弹窗的"授权说明"从选填改为**必填**（对应评分项"来源合规"） |
 | 11-17 | double-s846 | DeepSeek Harness | "起草 README、团队分工手册、产品说明、架构文档" | `README.md`、`docs/TEAM.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、本文件 | 人工填入真实约束：截止日期 12/06、评审权重 30/25/20/15/10、真实 Git 状态（仓库初始为空）、以及"沙箱内 git push 需本地执行"这一环境事实；删掉 AI 编造的"已完成的单元测试"段落 |
 | 11-17 | double-s846 | DeepSeek Harness | "写 3 篇示例文章与离线核心词表" | `src/data/sample-articles.ts`、`src/data/glossary/core.json` | 人工确认授权：2 篇团队原创标 CC BY 4.0，1 篇 Aesop 标 Public Domain；人工检查词表释义（AI 初稿把 `peculiar` 只译"奇怪的"，补上"特有的"义项，因为文中是后者） |
+| 11-17 | double-s846 | DeepSeek Harness | "给切句/切词/词形还原和间隔重复写单元测试" | `tests/tokenize.test.mjs`、`tests/srs.test.mjs` | ① 人工补充 AI 初稿没覆盖的边界：`a.m.` 缩写、`boxes`/`running` 的还原、`cities` 的候选污染、东八区凌晨 00:30 的 `dayKey`、盒 5 用 `easy` 不得越界；② 发现 `node --test tests/` 在某些受限环境会 `spawn EPERM`，人工加注说明可用 `node tests/xxx.test.mjs` 直接跑单文件；③ 测试跑出的 `cities → citie` 多余候选，回头修了 `tokenize.ts` 的生产代码 |
 
 <!-- 追加格式：
 | MM-DD | 姓名 | 工具 | 用途 / 提示词摘要 | 产出文件 | 人工做的实质性修改 |
 -->
+
+### 关于上表的两点说明
+
+1. **"人工做的实质性修改"这一列记的是实际发生的事**：当次生成后立刻发现并改掉的问题
+   （类型冲突、lint 规则冲突、正则分支不可达、时区 bug、必填项遗漏）。
+   后续成员照这个粒度写即可 —— 讲清楚"我改了什么、为什么改"，不要只写"改了一下"。
+2. **本表由负责人复核后提交**。AI 起草的部分在提交前需人工确认语义正确，
+   复核结果记在下节清单里。
+
+### 提交前复核清单（负责人填写）
+
+- [ ] `src/types.ts` 的字段语义与业务一致（尤其 `glossSource` / `context.sentenceId`）
+- [ ] `docs/AI_USAGE.md` 表格与真实 `git log` 对得上
+- [ ] 示例文章的授权标注正确（2 篇 CC BY 4.0 + 1 篇 Public Domain）
+- [ ] 离线词表释义与文章语境匹配（如 `peculiar` 取"特有的"而非"奇怪的"）
+- [ ] 演示前跑通 `npm run lint && npm run typecheck && npm run build && npm test`
 
 ## 4. AI 未参与的部分（人工独立完成）
 

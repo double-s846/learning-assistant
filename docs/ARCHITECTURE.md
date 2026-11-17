@@ -141,14 +141,22 @@ Leitner 三个按钮就能讲明白，评委 10 秒理解，而正确性对学�
 
 ---
 
-## 8. 测试策略（规划中）
+## 8. 测试策略
 
-优先级从高到低，因为这些函数的**边界条件最容易被忽略**：
+已落地：`tests/tokenize.test.mjs`（11 例）、`tests/srs.test.mjs`（9 例），共 **20 个用例**，
+运行方式 `npm test`（Node 内置 `node:test` + 原生 TypeScript 类型擦除，**不引入任何测试框架**）。
 
-1. `tokenize.splitSentences()`：缩写（Mr./e.g.）、小数（3.14）、引号收尾、连续标点；
-2. `tokenize.guessLemma()`：ies/ed/ing 的三类正则分支；
-3. `srs.scheduleNext()`：三档评分在盒 0 与盒 5 边界的进退；
-4. `srs.dayKey()`：本地时区跨天（用固定 `TZ=Asia/Shanghai` 跑）；
-5. `storage.importSnapshot()`：非法 JSON、版本过高、字段缺失。
+选这些用例的原则：**只测"错了也很难在界面上看出来"的纯函数。**
 
-运行方式（待接入）：`node --test`，无需额外测试框架。
+| 被测点 | 为什么必须测 |
+|---|---|
+| `splitSentences()`：缩写（Mr./e.g./a.m.）、小数（3.14）、引号收尾、连续标点 | 切错一句不会报错，只会让高亮和「点句解析」错位 |
+| 字符区间能否精确还原原文（`text.slice(start,end) === text`） | 这是整条标注链路的地基 |
+| `lemmaCandidates()`：ies/ed/ing/双写辅音 | 还原错了会归错卡片、查不到词 |
+| `scheduleNext()`：盒 0 与盒 5 边界 | 越界后复习间隔会算成负数或 NaN |
+| `dayKey()`：本地时区跨天 | 用 `toISOString().slice(0,10)` 在东八区凌晨会算到前一天 |
+
+待补（需要先打桩，优先级较低）：
+
+- `storage.importSnapshot()`：非法 JSON、版本过高、字段缺失 —— 需要 `localStorage` 打桩；
+- `dict.lookup()` 的降级顺序 —— 需要 `fetch` 打桩。
