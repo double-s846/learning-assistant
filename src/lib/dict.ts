@@ -18,7 +18,7 @@
  */
 
 import type { DictResult, DictSource } from '@/types'
-import { guessLemma, normalizeWord } from './tokenize'
+import { guessLemma, lemmaCandidates, normalizeWord } from './tokenize'
 
 interface GlossaryEntry {
   pos?: string
@@ -49,16 +49,31 @@ export interface LookupOptions {
   timeoutMs?: number
 }
 
-function fromLocal(word: string, lemma: string): DictResult | null {
-  const entry = glossary[word] ?? glossary[lemma]
-  if (!entry || !entry.zh) return null
+/**
+ * 在离线词表里按「原词 → 候选词元」的顺序查找。
+ * 依次试而不是只试第一个，是因为词形还原必然有歧义：
+ * deteriorating → deteriorat（不中）→ deteriorate（中），谁中算谁。
+ */
+function findLocal(word: string): { entry: GlossaryEntry; lemma: string } | null {
+  const keys = [normalizeWord(word), ...lemmaCandidates(word)]
+  for (const key of keys) {
+    const entry = glossary[key]
+    if (entry?.zh) return { entry, lemma: key }
+  }
+  return null
+}
+
+function fromLocal(word: string): DictResult | null {
+  const hit = findLocal(word)
+  if (!hit) return null
   return {
     word,
-    lemma,
-    phonetic: entry.phonetic,
-    pos: entry.pos,
-    glossZh: entry.zh,
-    glossEn: entry.en,
+    // 用命中的词元作为 lemma，这样 "deteriorating" 与 "deteriorate" 会归到同一张卡片
+    lemma: hit.lemma,
+    phonetic: hit.entry.phonetic,
+    pos: hit.entry.pos,
+    glossZh: hit.entry.zh,
+    glossEn: hit.entry.en,
     source: 'local',
   }
 }
@@ -87,10 +102,10 @@ async function fromFreeApi(word: string, lemma: string, timeoutMs: number): Prom
     if (!glossEn) return null
 
     // 免费接口只给英文释义；用离线词表补中文，补不到就先展示英文
-    const local = fromLocal(word, lemma)
+    const local = fromLocal(word)
     return {
       word,
-      lemma,
+      lemma: local?.lemma ?? lemma,
       phonetic: first?.phonetic ?? local?.phonetic,
       pos: meaning?.partOfSpeech ?? local?.pos,
       glossZh: local?.glossZh ?? '（该词暂无内置中文释义，可手动补充）',
@@ -130,7 +145,7 @@ export async function lookup(rawWord: string, options: LookupOptions = {}): Prom
   const cached = cache.get(cacheKey)
   if (cached) return cached
 
-  const local = fromLocal(word, lemma)
+  const local = fromLocal(word)
   if (local) {
     // 本地有中文释义就直接返回，不再消耗网络（也是离线可用的保证）
     cache.set(cacheKey, local)

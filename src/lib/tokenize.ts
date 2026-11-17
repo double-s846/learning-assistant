@@ -167,34 +167,57 @@ export function normalizeWord(raw: string): string {
 
 /**
  * 极简词形还原（离线可用，不需要词典）。
- * 只覆盖外刊里最常见的几种屈折变化，目的是让 "deteriorating" 能落到 "deteriorate"，
- * 不是要做完整的 NLP —— 查不到时原样返回，交给词典接口兜底。
+ *
+ * 只覆盖外刊里最常见的几种屈折变化。注意它**必然会出错**：
+ * `reading` 还原成 `read` 是对的，`deteriorating` 一步还原只会得到 `deteriorat`。
+ * 因此这里不追求"一步到位"，而是给出**有序候选链** `lemmaCandidates()`，
+ * 由 `dict.ts` 依次去词表里试，谁命中算谁 —— 这样两种词都能命中。
  */
+export function lemmaCandidates(word: string): string[] {
+  const w = normalizeWord(word)
+  const out: string[] = []
+
+  const push = (candidate: string) => {
+    const c = candidate.trim()
+    if (c.length >= 3 && c !== w && !out.includes(c)) out.push(c)
+  }
+
+  // 复数 / 第三人称单数
+  if (/ies$/.test(w)) push(w.replace(/ies$/, 'y'))
+  if (/ied$/.test(w)) push(w.replace(/ied$/, 'y'))
+  if (/sses$/.test(w)) push(w.replace(/es$/, ''))
+  if (/[sxz]es$/.test(w)) push(w.replace(/es$/, ''))
+  // -ies / -ied 已在上方处理，避免再多产生一个无意义的 "citie" 候选
+  else if (/[^su]s$/.test(w) && !/(ies|ied)$/.test(w)) push(w.replace(/s$/, ''))
+
+  // 现在分词 / 过去式：先试直接去尾，再试回填 e，最后试双写辅音还原
+  if (/ing$/.test(w)) {
+    const stem = w.slice(0, -3)
+    push(stem)
+    push(`${stem}e`)
+    push(stem.replace(/([^aeiou])\1$/, '$1'))
+  }
+  if (/ed$/.test(w)) {
+    const stem = w.slice(0, -2)
+    push(stem)
+    push(`${stem}e`)
+    push(stem.replace(/([^aeiou])\1$/, '$1'))
+  }
+
+  // 比较级 / 最高级
+  if (/ier$/.test(w)) push(w.replace(/ier$/, 'y'))
+  if (/iest$/.test(w)) push(w.replace(/iest$/, 'y'))
+  if (/est$/.test(w)) push(w.replace(/est$/, ''))
+  if (/er$/.test(w)) push(w.replace(/er$/, ''))
+
+  return out
+}
+
+/** 主词元猜测：候选链里最可能的那个，全不中就是小写原词本身 */
 export function guessLemma(word: string): string {
   const w = normalizeWord(word)
-  if (w.length <= 3) return w
-
-  const rules: Array<[RegExp, string]> = [
-    [/(ies)$/, 'y'],
-    [/([^aeiou])ied$/, '$1y'],
-    [/(sses)$/, 'ss'],
-    [/([sxz]es)$/, '$1'],
-    [/([^s])s$/, '$1'],
-    [/([^e])ing$/, '$1'],
-    [/([^e])ing$/, '$1e'],
-    [/([^e])ed$/, '$1'],
-    [/([^e])ed$/, '$1e'],
-    [/(est)$/, ''],
-    [/(er)$/, ''],
-  ]
-
-  for (const [pattern, replacement] of rules) {
-    if (pattern.test(w)) {
-      const candidate = w.replace(pattern, replacement)
-      if (candidate.length >= 3) return candidate
-    }
-  }
-  return w
+  const [first] = lemmaCandidates(w)
+  return first ?? w
 }
 
 /** 按 200 词/分钟的英文阅读速度估算分钟数，最少 1 分钟 */
