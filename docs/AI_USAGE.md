@@ -1,0 +1,96 @@
+# AI 使用记录（AI_USAGE.md）
+
+> 赛题把「AI 使用透明化」列为**重点评分项（20%）**，要求明确 AI 辅助环节与人工实质性修改内容。
+> 本文件按"场合 + 提示词 + 产出文件 + **人工改了什么**"逐条记录，随开发进度实时追加，不做事后补写。
+
+---
+
+## 1. 总述
+
+**本项目明确使用 AI 辅助开发，并且不掩饰这一点。**
+
+我们使用的边界：
+
+| 用 AI 做什么 | 不用 AI 做什么 |
+|---|---|
+| 生成样板代码、组件骨架、样式初稿 | 决定产品范围与取舍（由团队讨论定） |
+| 解释报错、给排查思路 | 决定数据结构契约（由负责人定并写注释说明理由） |
+| 把重复逻辑改成通用函数 | 撰写示例文章正文、整理离线词表内容 |
+| 起草文档结构 | 判断"某方案在评委环境能不能跑起来" |
+| 辅助排查边界情况 | 最终验收（`typecheck` / `lint` / `build` 三条全绿才算完） |
+
+**人工实质性修改的证据在哪里**：见 §3 表格的最后一列，以及 `git log` —— 每条提交都是人确认后才提交的，
+提交信息里能看出哪些是 AI 初稿、哪些是人工返工（如 `fix(parse):`、`refactor(storage):` 类提交）。
+
+## 2. 使用的 AI 工具
+
+| 工具 | 版本/入口 | 用途 |
+|---|---|---|
+| DeepSeek Harness（deepseek 模型） | 网页工作区 | 工程脚手架、组件初稿、文档起草、报错排查 |
+| 浏览器的开发者工具 AI 辅助（可选） | — | 个别 CSS 布局问题 |
+| GitHub Copilot（个别成员，可选） | — | 行内补全（仅补全，不生成整文件） |
+
+> 若后续有成员使用其他工具（Claude / ChatGPT / 通义 / 文心等），请在此表追加一行。
+
+## 3. 逐条使用记录
+
+| 日期 | 成员 | 工具 | 用途 / 提示词摘要 | 产出文件 | **人工做的实质性修改** |
+|---|---|---|---|---|---|
+| 11-17 | double-s846 | DeepSeek Harness | "为外刊学习助手搭 Vite + React + TS 工程，写数据契约与存储层" | `package.json`、`tsconfig*.json`、`vite.config.ts`、`eslint.config.js`、`.gitignore` | ① TypeScript 拉到 7.0.2 与 `typescript-eslint`（要求 <6.1）冲突，人工降到 5.9 并锁定 `~5.9`；② 包管理器从计划的 pnpm 改为 npm（评委环境 pnpm 不一定装，npm 自带）；③ 去掉 URL 自动抓取方案（跨域要代理，与"零配置"冲突） |
+| 11-17 | double-s846 | DeepSeek Harness | "设计全组共用的 TypeScript 数据契约，避免四个人类型冲突" | `src/types.ts` | 人工逐条复核字段语义：把 `glossSource` 从可选改为**必填**（强制界面展示释义来源，服务 AI 透明化评分）；把 `box` 从 `number` 收紧为 `0\|1\|2\|3\|4\|5` 字面量联合，让越界在编译期就报错 |
+| 11-17 | double-s846 | DeepSeek Harness | "写 localStorage 封装，要能版本化、能订阅、能导出备份" | `src/lib/storage.ts` | 人工增加 `importSnapshot()` 的三个校验分支（非本应用备份 / 版本过高 / 字段缺失），这是 AI 初稿里没有的失败路径 |
+| 11-17 | double-s846 | DeepSeek Harness | "写英文切段切句切词，要保留字符偏移" | `src/lib/tokenize.ts` | ① 人工补缩写表（AI 初稿只有 Mr./Dr.，补到 40+ 条含 U.S./e.g./a.m.）；② 修 `no-useless-escape`：字符组内 `\[` 改为直接放 `[`；③ 删掉一条重复的 ing 还原规则（`deteriorating` 会被还原成 `deteriorat`，补了 e 回退分支） |
+| 11-17 | double-s846 | DeepSeek Harness | "查词如何在没有 API key 的情况下也能用？给出降级方案" | `src/lib/dict.ts`、`src/data/glossary/core.json` | ① 决定 ①②③ 三级降级顺序（AI 建议本地→付费，人工改为本地→免费→付费，因为评委没有付费 key）；② 为 `fetch` 加 `AbortController` 3.5s 超时（AI 初稿没有超时，弱网会一直转圈）；③ `fromPaidApi()` 故意留空并写明原因：签名密钥不能进前端 bundle |
+| 11-17 | double-s846 | DeepSeek Harness | "写间隔重复与日历聚合工具" | `src/lib/srs.ts` | 人工把 `dayKey()` 从 `toISOString().slice(0,10)` 改为本地时区拼接 —— 原写法在东八区凌晨 0–8 点会把复习记录算到前一天 |
+| 11-17 | double-s846 | DeepSeek Harness | "写阅读器、查词气泡、导入弹窗、生词本抽屉、设置菜单" | `src/features/**`、`src/App.tsx`、`src/styles/**` | ① React 19 新规则 `react-hooks/set-state-in-effect` 报错 3 处，人工重构：`useCollection` 改为惰性初始化 + 只订阅、`WordPopover` 改为父级 `key` 重建、`ParsePanel` 改为 `useMemo` 派生；② 把 `React.MouseEvent` 的全局命名空间引用改为 `import type { MouseEvent as ReactMouseEvent }`（`verbatimModuleSyntax` 下会编译失败）；③ 导入弹窗的"授权说明"从选填改为**必填**（对应评分项"来源合规"） |
+| 11-17 | double-s846 | DeepSeek Harness | "起草 README、团队分工手册、产品说明、架构文档" | `README.md`、`docs/TEAM.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、本文件 | 人工填入真实约束：截止日期 12/06、评审权重 30/25/20/15/10、真实 Git 状态（仓库初始为空）、以及"沙箱内 git push 需本地执行"这一环境事实；删掉 AI 编造的"已完成的单元测试"段落 |
+| 11-17 | double-s846 | DeepSeek Harness | "写 3 篇示例文章与离线核心词表" | `src/data/sample-articles.ts`、`src/data/glossary/core.json` | 人工确认授权：2 篇团队原创标 CC BY 4.0，1 篇 Aesop 标 Public Domain；人工检查词表释义（AI 初稿把 `peculiar` 只译"奇怪的"，补上"特有的"义项，因为文中是后者） |
+
+<!-- 追加格式：
+| MM-DD | 姓名 | 工具 | 用途 / 提示词摘要 | 产出文件 | 人工做的实质性修改 |
+-->
+
+## 4. AI 未参与的部分（人工独立完成）
+
+- **产品范围与取舍**：决定"不做后端、不做 URL 抓取、押双模式差异化"，见 `docs/PRODUCT.md` §5；
+- **数据结构契约的业务语义**：`VocabEntry` 为什么要带 `context.sentenceId`（复习时回原文），
+  为什么 `ReadingMode` 只有两个值而不是三个；
+- **示例文章正文**：三篇文章的选题、写作、句子难度控制（刻意放入定语从句、插入语、分词状语，用于演示长句解析）；
+- **离线词表的中文释义审核**：逐条检查义项是否匹配文章语境；
+- **Git 提交与分工**：所有提交由人执行并编写提交信息；
+- **验收判定**：`npm run lint` / `typecheck` / `build` 三条全绿才允许提交；
+- **环境适配**：Windows 路径含中文与罗马数字 Ⅰ、npm 缓存目录受限、Git 认证等真实问题的排查。
+
+## 5. 文件级标记
+
+由 AI 生成初稿、人工修改后提交的文件，在文件头注释里带标记：
+
+```ts
+/**
+ * AI-assisted: 初稿由 DeepSeek（2026-11-17）生成，人工修改点见 docs/AI_USAGE.md §3。
+ */
+```
+
+当前带标记的文件：
+
+- `src/lib/storage.ts`
+- `src/lib/dict.ts`
+- `src/lib/srs.ts`
+- `src/lib/tokenize.ts`
+- `src/features/reader/Reader.tsx`
+- `src/features/vocab/WordPopover.tsx`
+- `src/features/library/ImportDialog.tsx`
+- `src/features/settings/SettingsMenu.tsx`
+
+## 6. 对话与提示词留存
+
+为保证可复核，关键提示词摘要已记录在 §3 的"用途 / 提示词摘要"列。
+完整的对话记录（含报错排查过程）由成员自行留存截图，作为提交材料附件。
+
+## 7. 待补充（团队分工后必做）
+
+- [ ] 每位成员在使用 AI 后**当次**追加一行记录（不要攒到最后一周，写不出来）；
+- [ ] 模块 B / C / D / E 的 AI 使用记录；
+- [ ] 若接入大模型做长句解析，必须记录：调用的是哪家模型、是否把用户文章发到第三方、
+      是否在界面上告知用户；
+- [ ] 演示视频里如使用 AI 配音/AI 生成画面，需在此声明。
