@@ -67,6 +67,8 @@ localStorage 同步、简单、够用（几 MB 文本量级完全撑得住）。
 
 ## 2. 模块划分与认领
 
+> 分支名、已有提交归属、评审复核命令见 **[CONTRIBUTION.md](CONTRIBUTION.md)**。
+
 已经实现的**地基**（不用你管，可以直接用）：
 
 | 文件 | 作用 |
@@ -150,19 +152,47 @@ Settings         // mode('flow'|'study') / theme / fontSize / lineHeight / ttsRa
 
 ## 4. 协作流程
 
-### 分支策略
+### 分支策略：一人一分支，PR 合入 main
 
-小团队，**直接用 `main` 也行，但每次提交前必须 `git pull --rebase`**。
-如果你要改的东西涉及公共层（`types.ts` / `lib/`），**先开分支**再开 PR，让别人看一眼。
+```
+main                    ← 集成分支，始终能跑，不要直接 push
+ ├─ dev/double-s846     ← double-s846（地基 + 公共层维护）
+ ├─ dev/<你的id>-b      ← 模块 B 负责人
+ ├─ dev/<你的id>-c      ← 模块 C 负责人
+ ├─ dev/<你的id>-d      ← 模块 D 负责人
+ └─ dev/<你的id>-e      ← 模块 E 负责人
+```
+
+**为什么必须这样**：GitHub 的 PR 页面会自动统计"谁提交、改了多少文件、动了哪些目录"。
+评审打开 PR 列表看到四条 PR 就是四份分工，比看 `git log` 直观，也比任何口头说明可信。
+详细的分工归属表与复核命令见 **[CONTRIBUTION.md](CONTRIBUTION.md)**。
+
+**你现在要做的**：
 
 ```bash
-git pull --rebase            # 开工前
+git fetch origin
+git switch -c dev/<你的github-id>-<模块字母> origin/main   # 从 main 拉自己的分支，只做一次
+```
+
+**日常循环**：
+
+```bash
+git pull --rebase origin main     # 开工前先跟上主干
 # ... 写代码 ...
 git add -A
 git commit -m "feat(review): 复习队列三档评分"
-git pull --rebase            # 提交前
-git push
+npm run lint && npm run typecheck && npm test && npm run build
+git push -u origin dev/<你的id>-<模块字母>
 ```
+
+然后去 GitHub 开 PR → 目标分支 `main`，按 [PR 模板](../.github/PULL_REQUEST_TEMPLATE.md) 填完。
+**PR 里必须写清：做了什么、怎么验证的、AI 用了什么/人工改了什么。**
+
+**红线**
+
+- 不要直接往 `main` push（第一个 PR 合并后我会开分支保护）；
+- 不要 force push `main`；
+- 不要在一个 PR 里改别人模块的文件 —— 会被打回。
 
 ### 提交规范（评审要看，别乱写）
 
@@ -172,6 +202,9 @@ fix(parse): 修正 that 从句在插入语后切分错误
 docs: 补充模块 C 的契约说明
 refactor(storage): 抽出 progressStore.get
 ```
+
+括号里的 scope 用模块名：`core` / `reader` / `library` / `vocab` / `review` / `parse` / `tts` / `settings` / `docs`。
+统一之后，`git log --grep="(review)"` 一条命令就能导出模块 C 的全部提交，写分工表不用回忆。
 
 **为什么要小步提交**：比赛明确说"保留完整 Git 提交记录作为分工考核依据"。
 最后一次性大提交 = 无法证明分工 = 白干。
