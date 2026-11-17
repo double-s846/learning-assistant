@@ -66,12 +66,12 @@ npm run build      # 生产构建（含 TypeScript 类型检查），产物在 d
 npm run preview    # 本地预览构建产物
 npm run typecheck  # 仅做类型检查
 npm run lint       # ESLint 检查
-npm test           # 单元测试（node:test，覆盖切句/切词/词形还原/间隔重复）
+npm test           # 单元测试（node:test，覆盖切句/切词/词形还原/间隔重复/长句解析）
 ```
 
-**当前测试覆盖**：20 个用例，全部针对"错了也很难在界面上看出来"的纯函数 ——
+**当前测试覆盖**：28 个用例，全部针对"错了也很难在界面上看出来"的纯函数 ——
 切句的缩写与小数边界、字符区间能否精确还原原文、词形还原候选链、SRS 盒子在 0/5 边界的进退、
-日历 key 的本地时区处理。
+日历 key 的本地时区处理、长句解析的从句切分与主干抽取。
 
 > **不需要配置任何环境变量。** `.env.example` 里列出的 key 全是可选增强项，
 > 不填也能完整跑通全部核心流程（详见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 的「三级降级」）。
@@ -94,7 +94,7 @@ npm test           # 单元测试（node:test，覆盖切句/切词/词形还原
 | 4 | **生词本与生词卡**：记录原句与出处 | ✅ | `lib/storage.ts`、`features/vocab/VocabDrawer.tsx` |
 | 5 | **生词卡日历 + 复习到期提醒** | 🚧 | `lib/srs.ts` 已就绪，UI 由模块 C 实现 |
 | 6 | **阅读进度与打勾标记**：段落级已读、文章百分比 | ✅ | `features/reader/Reader.tsx`、侧栏进度条 |
-| 7 | **长句解析**：切分句子成分并给出中文讲解 | 🚧 | `features/parse`（契约与面板已就绪，解析引擎实现中） |
+| 7 | **长句解析**：切分句子成分并给出中文讲解 | ✅ | `lib/clause.ts`（离线规则层）、`features/parse` |
 | 8 | **TTS 朗读**：逐句朗读 + 当前句高亮 | 📋 | 模块 E，使用浏览器原生 `SpeechSynthesis` |
 
 ### 进阶功能
@@ -259,10 +259,11 @@ PR 记录即分工证据，同时承载 AI 使用说明（见 [PR 模板](.githu
 - [x] 工程地基、数据契约、存储层
 - [x] 阅读器、导入、双模式、进度打勾、设置与备份
 - [x] 查词三级降级、生词卡基础版
-- [x] 单元测试（`npm test`，20 个用例覆盖 tokenize / srs）
+- [x] 单元测试（`npm test`，28 个用例覆盖 tokenize / srs / clause）
+- [x] **长句解析规则层**（模块 D）：从句切分 + 主干抽取 + 成分中文讲解，离线可用
 - [ ] 复习队列 + 日历热力图（模块 C）
-- [ ] 长句解析引擎（模块 D）
 - [ ] TTS 逐句朗读与高亮跟读（模块 E）
+- [ ] 长句解析的 LLM 增强（可选，需自备 key，失败自动回落规则层）
 - [ ] storage / dict 的测试（需先补 localStorage 与 fetch 的打桩）
 - [ ] 演示视频与评测评分解读（`docs/DEMO.md`）
 

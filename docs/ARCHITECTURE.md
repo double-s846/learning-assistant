@@ -112,7 +112,38 @@ Leitner 三个按钮就能讲明白，评委 10 秒理解，而正确性对学�
 
 ---
 
-## 6. 性能与可访问性
+## 6. 长句解析：离线规则层
+
+`src/lib/clause.ts` —— **纯函数，零网络，可在 Node 里单测**（`tests/clause.test.mjs`）。
+
+```
+analyzeSentence(text, { sentenceId })
+   ├─ ① 扫描连词，判定从句起点与角色
+   │     which/who/whom/whose        → 定语从句
+   │     because/although/while/…    → 状语从句
+   │     that（按前一个词判定）        → 报告类动词→宾语从句；抽象名词→同位语；其余→定语
+   ├─ ② 从句终点：下一个连词 / 冒号分号 / 逗号（已成形）/ 定语从句遇到助动词
+   ├─ ③ 介词短语修饰语：介词 + ≤6 词，遇标点·助动词·连词·并列·代词即止
+   ├─ ④ 主干 = 原文挖掉 kind='clause' 的区间（介词短语保留，否则读不通）
+   └─ ⑤ 无可切分 → 提示"可能是简单句"，面板标「未能切分」，不伪造结构
+```
+
+**几个非显然的判定**（写下来是因为它们决定了解析质量）：
+
+| 判定 | 为什么必须这么写 |
+|---|---|
+| 定语从句遇到**助动词**就断 | `The companies that understand this best \| have therefore stopped…`：`have` 才是外层谓语，不在这里断，从句会吞掉整个后半句 |
+| 助动词**链**不重复断 | `which had been laid out` 的 `been` 属于同一个助动词链，断了就只剩 `which had` |
+| 主干**保留**介词短语 | 早期版本把介词短语也挖掉，得到 `the trees were not distributed neighbourhood` —— 主干读不通就毫无价值 |
+| 挖除时吞掉两侧逗号 | 否则 `Older streets, which…, happened…` 会剩成 `Older streets, happened…`，看起来像缺谓语 |
+| `kind: 'clause' \| 'modifier'` | 一个字段同时决定「是否从主干剔除」和「界面配色」，避免两处逻辑走偏 |
+
+**已知局限**（也写在 `src/features/parse/README.md`）：省略 that 的接触从句识别不出；
+`that` 的歧义靠词表判定，生僻动词会误判；并列从句只标第一个。
+
+---
+
+## 7. 性能与可访问性
 
 **性能**
 
@@ -129,7 +160,7 @@ Leitner 三个按钮就能讲明白，评委 10 秒理解，而正确性对学�
 
 ---
 
-## 7. 已知限制（如实记录）
+## 8. 已知限制（如实记录）
 
 | 限制 | 原因 | 后续 |
 |---|---|---|
@@ -141,10 +172,11 @@ Leitner 三个按钮就能讲明白，评委 10 秒理解，而正确性对学�
 
 ---
 
-## 8. 测试策略
+## 9. 测试策略
 
-已落地：`tests/tokenize.test.mjs`（11 例）、`tests/srs.test.mjs`（9 例），共 **20 个用例**，
-运行方式 `npm test`（Node 内置 `node:test` + 原生 TypeScript 类型擦除，**不引入任何测试框架**）。
+已落地：`tests/tokenize.test.mjs`（11 例）、`tests/srs.test.mjs`（9 例）、`tests/clause.test.mjs`（8 例），
+共 **28 个用例**，运行方式 `npm test`（Node 内置 `node:test` + 原生 TypeScript 类型擦除，
+**不引入任何测试框架**）。
 
 选这些用例的原则：**只测"错了也很难在界面上看出来"的纯函数。**
 
@@ -155,6 +187,7 @@ Leitner 三个按钮就能讲明白，评委 10 秒理解，而正确性对学�
 | `lemmaCandidates()`：ies/ed/ing/双写辅音 | 还原错了会归错卡片、查不到词 |
 | `scheduleNext()`：盒 0 与盒 5 边界 | 越界后复习间隔会算成负数或 NaN |
 | `dayKey()`：本地时区跨天 | 用 `toISOString().slice(0,10)` 在东八区凌晨会算到前一天 |
+| `analyzeSentence()`：从句区间与原文一致、成分不重叠、主干 ≠ 整句 | 解析错了界面照样显示得"很像那么回事"，比崩溃更危险 |
 
 待补（需要先打桩，优先级较低）：
 
