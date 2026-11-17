@@ -100,20 +100,24 @@ export default function App() {
 
   /**
    * 装饰层装配。这里是**唯一**把各模块能力接进阅读器的地方：
-   *   现在：生词下划线（模块 B 的数据）
-   *   待接：sentenceClassName ← TTS 当前句（模块 E）
-   *         renderSentenceOverlay ← 长句成分标注（模块 D）
+   *   已接：生词下划线（模块 B 的数据）、解析焦点句（模块 D）
+   *   待接：sentenceClassName ← TTS 当前句（模块 E），与焦点句合并即可
    * 各模块只提供"纯函数"，不需要碰 Reader.tsx。
    */
   const decorations = useMemo<ReaderDecorations>(() => {
     const savedLemmas = new Set(vocab.map((v) => v.lemma))
+    const focusedSentenceId = parseTarget?.sentenceId
+
     return {
       wordClassName: (word) =>
         settings.mode === 'study' && savedLemmas.has(word.toLowerCase())
           ? 'w--saved'
           : undefined,
+      // 正在看解析的那一句给出焦点底色，避免面板关掉后不知道刚才是哪一句
+      sentenceClassName: (sentence) =>
+        sentence.id === focusedSentenceId ? 'sent--focus' : undefined,
     }
-  }, [vocab, settings.mode])
+  }, [vocab, settings.mode, parseTarget])
 
   return (
     <div className="app">
@@ -222,6 +226,7 @@ export default function App() {
 
       <ParsePanel
         open={parseTarget !== null}
+        sentenceId={parseTarget?.sentenceId ?? ''}
         sentence={parseTarget?.text ?? ''}
         onClose={() => setParseTarget(null)}
       />

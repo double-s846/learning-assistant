@@ -138,6 +138,7 @@ export function Reader({
               {sentences.map((sentence) => (
                 <span
                   key={sentence.id}
+                  data-sentence-id={sentence.id}
                   className={cx('sent', decorations?.sentenceClassName?.(sentence))}
                   onClick={() => {
                     if (!sentenceClickable) return
