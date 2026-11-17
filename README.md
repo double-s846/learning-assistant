@@ -232,14 +232,14 @@ learning-assistant/
 
 | 成员 | GitHub | 个人分支 | 负责模块 |
 |---|---|---|---|
-| double-s846 | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 地基与架构、阅读器、设置、文档、测试 |
-| 待填写 | （协作者） | `dev/<id>-b` | 模块 B 查词与生词本 |
-| 待填写 | （协作者） | `dev/<id>-c` | 模块 C 复习队列与日历 |
-| 待填写 | （协作者） | `dev/<id>-d` | 模块 D 长句解析 |
-| 待填写 | （协作者） | `dev/<id>-e` | 模块 E TTS 朗读跟读 |
+| double-s846 | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 公共层与架构、阅读器、设置、**模块 D 长句解析**、集成、文档与测试 |
+| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-<模块>` | 待认领（B 查词与生词本 / C 复习与日历 / E 朗读跟读） |
+| Selena | [@Selena14111](https://github.com/Selena14111) | `dev/Selena14111-<模块>` | 待认领（同上） |
+| zouyujing | [@zouyujing20070207](https://github.com/zouyujing20070207) | `dev/zouyujing20070207-<模块>` | 待认领（同上） |
 
-**协作方式**：一人一分支（`dev/<github-id>-<模块>`）→ 开 PR → 合入 `main`。
+**协作方式**：一人一分支 → 开 PR → 以 **Merge commit** 合入 `main`（不用 Squash，否则提交粒度被压平、分工统计失真）。
 PR 记录即分工证据，同时承载 AI 使用说明（见 [PR 模板](.github/PULL_REQUEST_TEMPLATE.md)）。
+阅读器采用**装饰层插槽**，B / D / E 三个模块都不需要改 `Reader.tsx`（见 [插槽说明](src/features/reader/README.md)）。
 
 ---
 

@@ -46,6 +46,8 @@
 | 11-17 | double-s846 | DeepSeek Harness | "起草 README、团队分工手册、产品说明、架构文档" | `README.md`、`docs/TEAM.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、本文件 | 人工填入真实约束：截止日期 12/06、评审权重 30/25/20/15/10、真实 Git 状态（仓库初始为空）、以及"沙箱内 git push 需本地执行"这一环境事实；删掉 AI 编造的"已完成的单元测试"段落 |
 | 11-17 | double-s846 | DeepSeek Harness | "写 3 篇示例文章与离线核心词表" | `src/data/sample-articles.ts`、`src/data/glossary/core.json` | 人工确认授权：2 篇团队原创标 CC BY 4.0，1 篇 Aesop 标 Public Domain；人工检查词表释义（AI 初稿把 `peculiar` 只译"奇怪的"，补上"特有的"义项，因为文中是后者） |
 | 11-17 | double-s846 | DeepSeek Harness | "给切句/切词/词形还原和间隔重复写单元测试" | `tests/tokenize.test.mjs`、`tests/srs.test.mjs` | ① 人工补充 AI 初稿没覆盖的边界：`a.m.` 缩写、`boxes`/`running` 的还原、`cities` 的候选污染、东八区凌晨 00:30 的 `dayKey`、盒 5 用 `easy` 不得越界；② 发现 `node --test tests/` 在某些受限环境会 `spawn EPERM`，人工加注说明可用 `node tests/xxx.test.mjs` 直接跑单文件；③ 测试跑出的 `cities → citie` 多余候选，回头修了 `tokenize.ts` 的生产代码 |
+| 11-17 | double-s846 | DeepSeek Harness | "把阅读器改成装饰层插槽，避免三个模块同时改 Reader.tsx" | `src/features/reader/Reader.tsx`、`src/types.ts`、`src/App.tsx`、`src/features/vocab/WordPopover.tsx`、`src/features/reader/README.md` | ① 人工判断插槽**只给 class 名和 ReactNode、不给 DOM 操作权**（否则模块之间仍会互相踩）；② 人工把 `WordSelection` 拆成 `WordHit`（进 `types.ts`）+ 坐标，去掉 `Reader → features/vocab` 的反向依赖 —— AI 初稿让 Reader import 了 `WordSelection`，属于分层错误；③ 人工把配色/交互约定写进 `reader/README.md` 的 CSS 钩子表，避免各模块自己发明 class 名；④ 人工补 `cx()` 避免出现 `class="w undefined"` |
+| 11-17 | double-s846 | DeepSeek Harness | "把成员、时间红线、进阶功能取舍写进 TEAM/CONTRIBUTION" | `docs/TEAM.md`、`docs/CONTRIBUTION.md`、`docs/PRODUCT.md`、`README.md` | 人工填入真实的四个 GitHub 账号与待认领状态；人工把"三条红线"从一句话扩成带处置措施的表格（11/23 降级、11/26 停止加功能、11/29 冻结）；人工按评分结构（闭环 30 + 文档 25 > 创新 15）决定进阶功能一律排除"需要 key / 需要后端"的项 |
 
 <!-- 追加格式：
 | MM-DD | 姓名 | 工具 | 用途 / 提示词摘要 | 产出文件 | 人工做的实质性修改 |
