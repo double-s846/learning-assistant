@@ -11,9 +11,19 @@
 - `ParsePanel.tsx`：面板 UI 已就绪，链路已通（阅读区点句子 → 拿到 `sentenceId` + 句子原文）；
 - 契约 `SentenceParse` / `ClauseSegment`（`src/types.ts`）；
 - `ROLE_LABEL`：成分角色的中文名映射；
-- 切句工具 `splitSentences()`，切词 `tokenizeWords()`（都带字符区间）。
+- 切句工具 `splitSentences()`，切词 `tokenizeWords()`（都带字符区间）；
+- **装饰层插槽**：正文上的成分标注不用改 `Reader.tsx`，见 `src/features/reader/README.md`：
 
-你只需要替换 `ParsePanel.tsx` 里的 `analyzeSentence()`。
+  ```tsx
+  decorations={{
+    sentenceClassName: (s) => (s.id === focusedId ? 'sent--focus' : undefined),
+    renderSentenceOverlay: (s) => <ClauseMarks sentence={s} segments={parseOf(s.id)?.segments} />,
+  }}
+  ```
+
+  把 `segments[].start/end` 直接用于 `text.slice()` 上色即可，不需要重新切文本。
+
+你主要需要替换的是 `ParsePanel.tsx` 里的 `analyzeSentence()`，以及新增一个 `ClauseMarks` 组件。
 
 ## 实现路线（由易到难，每步都能交付）
 

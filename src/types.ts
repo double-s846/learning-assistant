@@ -125,6 +125,26 @@ export interface ReadingProgress {
   updatedAt: string
 }
 
+/* ------------------------------------------------------------ 交互载荷 */
+
+/**
+ * 用户点中一个单词时，阅读器抛出的**最小上下文**。
+ *
+ * 为什么放在 types.ts 而不是某个 feature 里：
+ * 阅读器（features/reader）不该 import 查词模块（features/vocab），
+ * 否则两个模块会互相依赖，谁都不敢先改。放在公共契约里，双方都只依赖 types。
+ */
+export interface WordHit {
+  /** 用户点到的原始词形，例如 "deteriorating" */
+  word: string
+  articleId: string
+  articleTitle: string
+  paragraphId: string
+  sentenceId: string
+  /** 原句全文，生词卡要沿用它作为语境 */
+  sentence: string
+}
+
 /* ------------------------------------------------------------ 长句解析 */
 
 /** 句子成分角色 */
