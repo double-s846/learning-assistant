@@ -1,0 +1,230 @@
+/* ============================================================================
+   全局样式与主题变量
+   ----------------------------------------------------------------------------
+   设计取向：「像在读一本纸质外刊」。因此正文用衬线字体、暖色纸底、
+   高亮用低饱和标记色而不是荧光色 —— 这直接服务于赛题的「阅读流畅性」。
+   深色与护眼（sepia）主题通过 [data-theme] 切换，不引入 UI 框架，
+   保证依赖清单干净（第三方许可证清单也短）。
+   ========================================================================== */
+
+:root {
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, 'Songti SC',
+    'Noto Serif SC', serif;
+  --font-sans: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 16px;
+
+  --sidebar-w: 264px;
+  --content-max: 720px;
+
+  --transition: 160ms ease;
+}
+
+/* ---------------- 主题：浅色（纸白） ---------------- */
+:root,
+[data-theme='light'] {
+  --bg: #f6f3ec;
+  --bg-elevated: #fffdf8;
+  --bg-sunken: #efeade;
+  --border: #e2dbcc;
+  --border-strong: #cfc5b1;
+  --ink: #23282a;
+  --ink-soft: #5b6360;
+  --ink-faint: #8c938f;
+  --accent: #2f5d50;
+  --accent-soft: #dfeae4;
+  --accent-ink: #ffffff;
+  --mark: #f3d9a4;
+  --mark-strong: #e8b95f;
+  --danger: #a8443a;
+  --shadow: 0 1px 2px rgba(35, 40, 42, 0.06), 0 8px 24px rgba(35, 40, 42, 0.06);
+}
+
+/* ---------------- 主题：护眼（米黄） ---------------- */
+[data-theme='sepia'] {
+  --bg: #f2e5cf;
+  --bg-elevated: #f9efdd;
+  --bg-sunken: #e9d9bd;
+  --border: #dcc9a8;
+  --border-strong: #c9b28b;
+  --ink: #3a3021;
+  --ink-soft: #6b5c45;
+  --ink-faint: #91805f;
+  --accent: #7a5c2e;
+  --accent-soft: #eadcc0;
+  --accent-ink: #fffaf0;
+  --mark: #e0bd7d;
+  --mark-strong: #c9993f;
+  --danger: #9a3f33;
+  --shadow: 0 1px 2px rgba(58, 48, 33, 0.08), 0 8px 24px rgba(58, 48, 33, 0.08);
+}
+
+/* ---------------- 主题：深色 ---------------- */
+[data-theme='dark'] {
+  --bg: #16191b;
+  --bg-elevated: #1e2224;
+  --bg-sunken: #121516;
+  --border: #2c3234;
+  --border-strong: #3d4446;
+  --ink: #e6e3db;
+  --ink-soft: #a8b0ad;
+  --ink-faint: #79817f;
+  --accent: #7fb69f;
+  --accent-soft: #24332d;
+  --accent-ink: #10201a;
+  --mark: #5a4a25;
+  --mark-strong: #b9924a;
+  --danger: #d98077;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------------- 基础重置 ---------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--transition), color var(--transition);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--accent);
+}
+
+::selection {
+  background: var(--mark);
+  color: var(--ink);
+}
+
+/* 焦点可见性：键盘用户可辨，鼠标用户不受打扰 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+
+/* ---------------- 通用小部件 ---------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--ink);
+  font-size: 13.5px;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  border-color: var(--border-strong);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.btn--primary:hover {
+  filter: brightness(1.06);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-soft);
+}
+
+.btn--ghost:hover {
+  background: var(--bg-sunken);
+  color: var(--ink);
+}
+
+.btn[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+
+.hint {
+  color: var(--ink-faint);
+  font-size: 12.5px;
+}
+
+/* 滚动条 */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 3px solid var(--bg);
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
