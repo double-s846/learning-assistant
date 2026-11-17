@@ -227,14 +227,19 @@ learning-assistant/
 
 ## 团队分工
 
-详细分工、协作约定、提交规范见 **[docs/TEAM.md](docs/TEAM.md)**。
+详细分工、协作约定、提交规范见 **[docs/TEAM.md](docs/TEAM.md)**；
+每个提交归属哪个成员、哪个目录，以及评审如何用三条命令复核，见 **[docs/CONTRIBUTION.md](docs/CONTRIBUTION.md)**。
 
-| 成员 | GitHub | 负责模块 |
-|---|---|---|
-| 待填写 | double-s846 | 地基与架构、阅读器、设置、文档 |
-| 待填写 | （协作者） | 模块 B 查词与生词本 |
-| 待填写 | （协作者） | 模块 C 复习队列与日历 |
-| 待填写 | （协作者） | 模块 D 长句解析 |
+| 成员 | GitHub | 个人分支 | 负责模块 |
+|---|---|---|---|
+| double-s846 | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 地基与架构、阅读器、设置、文档、测试 |
+| 待填写 | （协作者） | `dev/<id>-b` | 模块 B 查词与生词本 |
+| 待填写 | （协作者） | `dev/<id>-c` | 模块 C 复习队列与日历 |
+| 待填写 | （协作者） | `dev/<id>-d` | 模块 D 长句解析 |
+| 待填写 | （协作者） | `dev/<id>-e` | 模块 E TTS 朗读跟读 |
+
+**协作方式**：一人一分支（`dev/<github-id>-<模块>`）→ 开 PR → 合入 `main`。
+PR 记录即分工证据，同时承载 AI 使用说明（见 [PR 模板](.github/PULL_REQUEST_TEMPLATE.md)）。
 
 ---
 
