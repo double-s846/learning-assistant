@@ -5,12 +5,14 @@
  * 这样多个同学并行开发时不会都来改同一个文件（合并冲突的主要来源）。
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent } from 'react'
+import type { WordHit } from '@/types'
 import type { WordSelection } from '@/features/vocab/WordPopover'
 import { WordPopover } from '@/features/vocab/WordPopover'
 import { VocabDrawer } from '@/features/vocab/VocabDrawer'
 import { Reader } from '@/features/reader/Reader'
+import type { ReaderDecorations } from '@/features/reader/Reader'
 import { Sidebar } from '@/features/library/Sidebar'
 import { ImportDialog } from '@/features/library/ImportDialog'
 import { SettingsMenu } from '@/features/settings/SettingsMenu'
@@ -85,16 +87,37 @@ export default function App() {
   }
 
   function handleWordClick(
-    payload: Omit<WordSelection, 'x' | 'y'>,
+    hit: WordHit,
     event: ReactMouseEvent<HTMLSpanElement>,
   ) {
     const rect = event.currentTarget.getBoundingClientRect()
     setSelection({
-      ...payload,
+      ...hit,
       x: rect.left + rect.width / 2,
       y: rect.top,
     })
   }
+
+  /**
+   * 装饰层装配。这里是**唯一**把各模块能力接进阅读器的地方：
+   *   已接：生词下划线（模块 B 的数据）、解析焦点句（模块 D）
+   *   待接：sentenceClassName ← TTS 当前句（模块 E），与焦点句合并即可
+   * 各模块只提供"纯函数"，不需要碰 Reader.tsx。
+   */
+  const decorations = useMemo<ReaderDecorations>(() => {
+    const savedLemmas = new Set(vocab.map((v) => v.lemma))
+    const focusedSentenceId = parseTarget?.sentenceId
+
+    return {
+      wordClassName: (word) =>
+        settings.mode === 'study' && savedLemmas.has(word.toLowerCase())
+          ? 'w--saved'
+          : undefined,
+      // 正在看解析的那一句给出焦点底色，避免面板关掉后不知道刚才是哪一句
+      sentenceClassName: (sentence) =>
+        sentence.id === focusedSentenceId ? 'sent--focus' : undefined,
+    }
+  }, [vocab, settings.mode, parseTarget])
 
   return (
     <div className="app">
@@ -160,11 +183,14 @@ export default function App() {
           <Reader
             article={article}
             settings={settings}
-            vocab={vocab}
+            decorations={decorations}
             readParagraphIds={progress?.readParagraphIds ?? []}
+            sentenceClickable={settings.mode === 'study'}
             onWordClick={handleWordClick}
             onToggleParagraph={toggleParagraph}
-            onSentenceClick={(sentenceId, text) => setParseTarget({ sentenceId, text })}
+            onSentenceClick={(sentence) =>
+              setParseTarget({ sentenceId: sentence.id, text: sentence.text })
+            }
           />
         ) : (
           <div className="empty">
@@ -200,6 +226,7 @@ export default function App() {
 
       <ParsePanel
         open={parseTarget !== null}
+        sentenceId={parseTarget?.sentenceId ?? ''}
         sentence={parseTarget?.text ?? ''}
         onClose={() => setParseTarget(null)}
       />

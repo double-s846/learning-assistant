@@ -125,6 +125,26 @@ export interface ReadingProgress {
   updatedAt: string
 }
 
+/* ------------------------------------------------------------ 交互载荷 */
+
+/**
+ * 用户点中一个单词时，阅读器抛出的**最小上下文**。
+ *
+ * 为什么放在 types.ts 而不是某个 feature 里：
+ * 阅读器（features/reader）不该 import 查词模块（features/vocab），
+ * 否则两个模块会互相依赖，谁都不敢先改。放在公共契约里，双方都只依赖 types。
+ */
+export interface WordHit {
+  /** 用户点到的原始词形，例如 "deteriorating" */
+  word: string
+  articleId: string
+  articleTitle: string
+  paragraphId: string
+  sentenceId: string
+  /** 原句全文，生词卡要沿用它作为语境 */
+  sentence: string
+}
+
 /* ------------------------------------------------------------ 长句解析 */
 
 /** 句子成分角色 */
@@ -143,6 +163,13 @@ export type ClauseRole =
   | 'parenthesis' // 插入语
   | 'unknown'
 
+/**
+ * 成分类型：
+ *  - `clause`   从句。计算主干时会被**挖掉**（挖掉后主干依然成立，这正是"先读主干"的意义）
+ *  - `modifier` 修饰语（介词短语等）。主干里**保留**它，只是单独标注出来供阅读参考
+ */
+export type SegmentKind = 'clause' | 'modifier'
+
 /** 一个切分出来的成分 */
 export interface ClauseSegment {
   /** 该成分在**句子文本**中的字符区间 */
@@ -150,6 +177,8 @@ export interface ClauseSegment {
   end: number
   text: string
   role: ClauseRole
+  /** 从句还是修饰语 —— 决定是否从主干中剔除，也决定界面配色 */
+  kind: SegmentKind
   /** 中文讲解，一句话说清这里在干什么 */
   noteZh: string
 }

@@ -80,32 +80,67 @@ localStorage 同步、简单、够用（几 MB 文本量级完全撑得住）。
 | `src/lib/article.ts` | 文本 → Article / Sentence（句子 id 是确定性的，刷新后仍能对上） |
 | `src/lib/dict.ts` | 查词三级降级 |
 | `src/lib/srs.ts` | 间隔重复计算、日历聚合（**已写好，模块 C 直接用**） |
-| `src/features/reader/Reader.tsx` | 阅读器，点词 / 点句的回调已经接好 |
+| `src/features/reader/Reader.tsx` | 阅读器（**装饰层插槽**，三个模块都不需要改它，见下） |
 | `src/features/settings/` | 设置、主题、导出导入备份 |
 
-**待认领的 4 个模块**：
+### ⚠️ 阅读器不要再改：用装饰层插槽
 
-| 模块 | 目录 | 要交付什么 | 难度 | 建议人 |
-|---|---|---|---|---|
-| **B 查词与生词本** | `src/features/vocab/` | 生词卡列表增强、搜索、按文章筛选、标签、批量删除、导出 CSV | 中 | 待填 |
-| **C 复习队列与日历** | `src/features/review/` | 今日复习队列 UI、Again/Good/Easy 三档评分、日历热力图、每日目标完成度 | 中 | 待填 |
-| **D 长句解析** | `src/features/parse/` | 真正实现 `analyzeSentence()`：切分从句与修饰语、标主干、给中文讲解 | **难** | 待填（建议最熟英语语法的） |
-| **E 朗读与跟读** | `src/features/tts/` | 逐句朗读、当前句高亮跟随、自动滚动、语速与音色选择、暂停/继续 | 简单 | 待填（可与 C 合并给同一人） |
+`Reader.tsx` 是 B / D / E 三个模块的交汇点。已经改成"只渲染正文 + 装饰层插槽"，
+所有"给某句/某词加点什么"的需求都通过 `decorations` 传入：
 
-> 按"复杂少做、简单多做"配平：**D 单独一个人，E 可以和 C 给同一个人**，剩下两人各拿 B 一份。
+```tsx
+decorations={{
+  wordClassName: (w) => …'w--saved',                    // B：生词下划线
+  sentenceClassName: (s) => …'sent--speaking',          // E：朗读当前句
+  renderSentenceOverlay: (s) => <ClauseMarks … />,      // D：成分标注
+  renderParagraphExtra: (p) => <SpanTime … />,          // E：段落阅读时长
+}}
+```
 
-### 每个模块的第一步（复制即用）
+装配点是 `src/App.tsx` 里的 `decorations`（一处，`useMemo` 缓存）。
+**你的分支里不要出现 `Reader.tsx` 的改动**——真需要新插槽就在群里提，由公共层成员加。
+API 细节见 `src/features/reader/README.md`。
 
-**模块 C 的第一步**：`lib/srs.ts` 里已经有 `buildReviewQueue()` / `reviewEntry()` / `monthGrid()` / `reviewCountByDay()`，你只需要写 UI：
+### 成员与认领（已确定）
 
-1. 在 `src/features/review/ReviewPanel.tsx` 新建组件，用 `useVocab()` 拿数据；
-2. `const queue = buildReviewQueue(vocab)` 得到今日待复习；
-3. 显示卡片 → 点「没记住/记得/很简单」→ `vocabStore.upsert(reviewEntry(entry, grade))`；
-4. 日历用 `monthGrid(year, month)` 生成 42 格，`reviewCountByDay(vocab)` 取每天次数上色。
+| 成员 | GitHub | 分支 | 负责模块 |
+|---|---|---|---|
+| double-s846（负责人） | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 公共层与架构、阅读器插槽、**模块 E 朗读跟读**、集成、文档、演示 |
+| Selena | [@Selena14111](https://github.com/Selena14111) | `dev/Selena14111-b` | **模块 B** 查词与生词本 |
+| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-c` | **模块 C** 复习队列与日历 |
+| zouyujing | [@zouyujing20070207](https://github.com/zouyujing20070207) | `dev/zouyujing20070207-d` | **模块 D** 长句解析（在已完成的规则层上做增强） |
 
-**模块 D 的第一步**：打开 `src/features/parse/ParsePanel.tsx`，找到 `analyzeSentence()`，按文件顶部注释里的路线实现。**先做离线规则层，别一上来接大模型。**
+> 每人的具体交付清单、第一个 commit、验收标准见 **[ONBOARDING.md](ONBOARDING.md)**。
+> 分支名一旦确定不要再改，否则 PR 记录会断。
 
-**模块 E 的第一步**：新建 `src/features/tts/useTTS.ts`：
+### 四个模块与状态
+
+| 模块 | 目录 | 交付内容 | 难度 | 负责人 | 状态 |
+|---|---|---|---|---|---|
+| **B 查词与生词本** | `src/features/vocab/` | 搜索、按文章/盒子筛选、标签、批量删除、导出 CSV、**整句翻译** | 中 | Selena14111 | 🚧 待开工 |
+| **C 复习队列与日历** | `src/features/review/` | 复习卡片、三档评分、日历热力图、记忆曲线、每日目标 | 中 | jz-Gong10 | 🚧 入口已接好 |
+| **D 长句解析** | `src/features/parse/` | 规则层**已完成**（`lib/clause.ts` + 8 单测）；接手做：正文内联标注、接触/并列从句、缓存、可选 LLM 增强 | **难** | zouyujing20070207 | 🟡 规则层已交付 |
+| **E 朗读与跟读** | `src/features/tts/` | 逐句朗读、当前句高亮跟随、自动滚动、语速音色、暂停继续、**阅读时长统计** | 简单 | double-s846 | 🚧 待开工 |
+
+> 配平逻辑：D 最难，前一半由最熟代码的人先做掉（否则会卡住整个赛题的基础功能点 7）；
+> 接手的人做"从能跑到好用"的增强，工作量足够且有展示价值。
+> E 最轻，但要动 `App.tsx` 的 `decorations` 装配与全局播放状态，归负责集成的人。
+
+### 每个模块的第一步（完整清单见 ONBOARDING.md）
+
+**模块 B（Selena）**：读 `src/features/vocab/README.md` → 跑起来点 3 个词进生词本 →
+在 `VocabDrawer.tsx` 顶部加搜索框与"按文章筛选"下拉。第一个提交写
+`feat(vocab): 生词本支持搜索与按文章筛选`。
+
+**模块 C（宫霁祯）**：入口已经接好（顶栏「复习」按钮 → `ReviewPanel.tsx` 占位）。
+读 `src/features/review/README.md` → 把占位卡片换成真正的复习卡片 + 三档评分。
+算法全部在 `lib/srs.ts`（已有 9 个单测），**你只写界面**。
+
+**模块 D（zouyujing）**：规则层已完成，先读 `src/features/parse/README.md` 与
+`docs/ARCHITECTURE.md` 第 6 节 → 然后从**正文内联标注 `ClauseMarks.tsx`** 开始
+（展示价值最高），接线找我加一行。
+
+**模块 E（负责人）**：新建 `src/features/tts/useTTS.ts`：
 
 ```ts
 // 用浏览器原生能力，零依赖零费用
@@ -113,7 +148,8 @@ const utter = new SpeechSynthesisUtterance(text)
 utter.lang = 'en-US'
 utter.rate = settings.ttsRate
 speechSynthesis.speak(utter)
-// 逐句：onend 里取下一句；当前句 id 存 state，Reader 通过 props 高亮
+// 逐句：onend 里取下一句；当前句 id 存 state
+// 高亮：在 App.tsx 的 decorations 里加 sentenceClassName；滚动用 data-sentence-id（已加好）
 ```
 
 ---
@@ -230,18 +266,59 @@ npm run build
 
 | 阶段 | 时间 | 交付 |
 |---|---|---|
-| 地基（已完成） | 11/17 | 工程脚手架、契约、阅读器、查词、进度、设置 |
+| 地基（已完成） | 11/17 | 工程脚手架、契约、阅读器、查词、进度、设置、插槽重构 |
 | **并行开发** | 11/18 – 11/23 | B / C / D / E 四个模块各自能独立跑 |
 | 联调 | 11/24 – 11/26 | 合到 main，修冲突，整体走通一遍 |
 | 补测与文档 | 11/27 – 11/29 | 继续补单测（tokenize/srs 已有 20 例）、README 补齐、**AI 使用记录整理** |
 | 演示与打包 | 11/30 – 12/03 | 录 3–5 分钟演示视频、提交压缩包自测 |
 | 缓冲 | 12/04 – 12/06 | 提交（别拖到 12/6 当天） |
 
-**红线**：11/23 晚上还没跑通的模块，立刻降级为"简化版"，宁可少一个功能也不能没有可运行闭环。
+### 三条红线（到点就走，不许讨价还价）
+
+| 时间 | 红线 | 到点没做到怎么办 |
+|---|---|---|
+| **11/23 24:00** | 四个模块都能在自己的分支上跑通 | 当场降级成"简化版"：长句解析只标主干不做从句、TTS 只做整段读不做逐句高亮。**宁可少一个功能，不能没有可运行闭环** |
+| **11/26 24:00** | 所有模块已合进 `main`，全流程走通 | 停止开发新功能。没合进来的功能，直接从 `main` 的 README 里删掉，不要留在文档里"画饼" |
+| **11/29 24:00** | 功能冻结，只修 bug | 之后任何人不再提新功能 PR，只接受 `fix:` 类提交 |
+
+> 为什么定这么死：截止日前三天最容易出的事故是"为了加一个功能把能跑的东西改坏了"。
+> 我们的评分结构里，**可运行闭环 30 分 > 创新性 15 分**，先保命再加分。
 
 ---
 
-## 6. AI 使用记录：随手写，别攒着
+## 6. 进阶功能：做哪些、放弃哪些
+
+评分结构决定了取舍：**可运行闭环 30 分 + 文档 25 分 = 55 分**，而创新性只有 15 分。
+所以进阶功能的原则是——**只挑"不引入新依赖、不引入 key、不引入服务"的**。
+
+### ✅ 在截止前做（已经分到人）
+
+| 进阶功能 | 工期 | 归属 | 为什么值得做 |
+|---|---|---|---|
+| 整句/划词翻译 | 2–3 天 | 模块 B | 赛题明确提到"划词翻译"；接免费接口即可，不必用付费 API |
+| 阅读时长统计 | 0.5 天 | 模块 E | 极便宜，直接抬"数据可视化"观感 |
+| 生词卡记忆曲线 | 1 天 | 模块 C | `srs.ts` 已记录每次复习的 `fromBox/toBox`，画曲线几乎是白送的 |
+| 标签分类 | 1 天 | 模块 B（有余力） | `VocabEntry.tags` 字段已留好 |
+| CSV 导出 | 0.5 天 | 模块 B | 数据导出已有 JSON，"能带走数据"是加分点 |
+| 多文章管理（搜索/删除） | 1 天 | 公共层 | 侧栏已有列表，补搜索与删除 |
+
+### ❌ 明确放弃（写进 PRODUCT.md 的 Non-goals）
+
+| 功能 | 放弃理由 |
+|---|---|
+| AI 摘要 / AI 出题 / 发音评测 | 需要大模型 key。评委没有 key 就跑不起来，直接砸掉 30 分闭环；工期 3–5 天也挤不进来 |
+| URL 自动抓取全文 | 浏览器跨域必须配代理，等于引入后端 |
+| 云端同步 / 多设备 | 需要后端与账号体系，与"零配置可跑"直接冲突 |
+| 移动端 App / 浏览器插件 | 时间不够；Web 响应式已覆盖手机浏览器 |
+| 发音打分 / 语音识别 | 需要音频服务，同上 |
+| 主题商店 / 多语言界面 | 收益低，挤占联调时间 |
+
+> **一句话**：任何需要 API Key 或后端的功能，一律推到"赛后迭代"，
+> 并在 README/PRODUCT 里写明"规划中"——这比做一半做坏更体面，也不会丢分。
+
+---
+
+## 7. AI 使用记录：随手写，别攒着
 
 评委给了 **20 分**给"AI 使用透明化"，而且明确要求写"人工实质性修改内容"。这个分数最好拿也最容易丢。
 
@@ -255,7 +332,7 @@ npm run build
 
 ---
 
-## 7. 常见问题
+## 8. 常见问题
 
 **Q：我能用别的 UI 库吗（Ant Design / Tailwind / MUI）？**
 A：不建议。每加一个依赖都要进第三方许可证清单，而且会稀释我们"零配置可跑"的优势。现有 CSS 变量体系已经够用。
@@ -277,7 +354,7 @@ A：不行，见 §1 决策①。要做也是比赛结束之后的迭代。
 
 ---
 
-## 8. 现在就能做的第一件事
+## 9. 现在就能做的第一件事
 
 1. `git clone` 仓库，`npm install`，`npm run dev`，确认能看到 3 篇示例文章；
 2. 点几个词、切一下流畅/学习模式、勾几个段落，感受一下现在的完成度；

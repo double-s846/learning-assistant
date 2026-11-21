@@ -31,8 +31,23 @@ speechSynthesis.speak(utter)
 
 1. `useTTS.ts`：封装 `speak / pause / resume / stop`、当前句 id、播放状态；
 2. `TTSPanel.tsx` 或顶栏按钮：播放 / 暂停 / 上一句 / 下一句 / 语速 / 音色选择；
-3. **当前句高亮**：把 `activeSentenceId` 通过 props 传给 `Reader`（需要小改 `Reader.tsx`，认领后配合改，避免多人同时改同一文件）；
-4. **自动滚动**：`element.scrollIntoView({ block: 'center', behavior: 'smooth' })`，尊重 `prefers-reduced-motion`；
+3. **当前句高亮**：**不要改 `Reader.tsx`**，用装饰层插槽（见 `src/features/reader/README.md`）：
+
+   ```tsx
+   // src/App.tsx 里装配 decorations 时加上这一条即可
+   sentenceClassName: (s) => (s.id === activeSentenceId ? 'sent--speaking' : undefined)
+   ```
+
+   样式自己在 `src/styles/app.css` 追加 `.sent--speaking { … }`。
+4. **自动滚动**：拿到 `activeSentenceId` 后查节点再滚：
+
+   ```ts
+   document
+     .querySelector(`[data-sentence-id="${activeSentenceId}"]`)
+     ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+   ```
+
+   `data-sentence-id` 目前还没加到 DOM 上 —— **在群里说一声，由公共层加**（一条属性，不应由你在你的分支里改 Reader）。
 5. **跟读模式（加分）**：读完一句暂停 N 秒，留时间用户自己复述。
 
 ## 已知坑（务必处理）

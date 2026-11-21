@@ -10,18 +10,17 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import type { DictResult, VocabEntry } from '@/types'
+import type { DictResult, VocabEntry, WordHit } from '@/types'
 import { DICT_SOURCE_LABEL, lookup } from '@/lib/dict'
 import { createId, ID_PREFIX } from '@/lib/id'
 import { vocabStore } from '@/lib/storage'
 
-export interface WordSelection {
-  word: string
-  articleId: string
-  articleTitle: string
-  paragraphId: string
-  sentenceId: string
-  sentence: string
+/**
+ * 查词气泡的输入 = 阅读器抛出的 `WordHit` + 屏幕坐标。
+ * 上下文部分（文章/段落/句子）由 Reader 提供，这里只补位置信息，
+ * 这样 Reader 就不需要依赖本模块 —— 依赖方向保持单向（features → types）。
+ */
+export type WordSelection = WordHit & {
   /** 点击位置，用于定位气泡 */
   x: number
   y: number
