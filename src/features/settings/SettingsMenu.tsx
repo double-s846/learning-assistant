@@ -6,7 +6,7 @@
  * 因此放在最显眼的位置（也出现在顶栏的 seg 切换里）。
  */
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { ReadingMode, Settings, ThemeMode } from '@/types'
 import { clearAll, exportSnapshot, importSnapshot } from '@/lib/storage'
 
@@ -30,27 +30,38 @@ const MODES: Array<{ value: ReadingMode; label: string }> = [
 
 export function SettingsMenu({ open, settings, onChange, onClose }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
 
   if (!open) return null
 
-  function handleExport() {
-    const snapshot = exportSnapshot()
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `learning-assistant-backup-${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+  async function handleExport() {
+    setBusy(true)
+    try {
+      const snapshot = await exportSnapshot()
+      const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `learning-assistant-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (cause) {
+      window.alert(cause instanceof Error ? cause.message : '导出备份失败')
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function handleImportFile(file: File) {
-    const text = await file.text()
+    setBusy(true)
     try {
-      const result = importSnapshot(JSON.parse(text))
+      const text = await file.text()
+      const result = await importSnapshot(JSON.parse(text))
       window.alert(result.message)
-    } catch {
-      window.alert('文件不是合法的 JSON 备份')
+    } catch (cause) {
+      window.alert(cause instanceof Error ? cause.message : '备份导入失败')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -141,10 +152,10 @@ export function SettingsMenu({ open, settings, onChange, onClose }: Props) {
         </div>
 
         <div className="menu__row" style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-          <button className="btn" onClick={handleExport}>
+          <button className="btn" onClick={() => void handleExport()} disabled={busy}>
             导出备份
           </button>
-          <button className="btn" onClick={() => fileRef.current?.click()}>
+          <button className="btn" onClick={() => fileRef.current?.click()} disabled={busy}>
             导入备份
           </button>
         </div>
@@ -152,11 +163,18 @@ export function SettingsMenu({ open, settings, onChange, onClose }: Props) {
         <div className="menu__row">
           <button
             className="btn btn--ghost"
+            disabled={busy}
             style={{ color: 'var(--danger)', fontSize: 12 }}
-            onClick={() => {
+            onClick={async () => {
               if (window.confirm('确认清空所有本地数据？此操作不可撤销。')) {
-                clearAll()
-                location.reload()
+                setBusy(true)
+                try {
+                  await clearAll()
+                  location.reload()
+                } catch (cause) {
+                  window.alert(cause instanceof Error ? cause.message : '清空数据失败')
+                  setBusy(false)
+                }
               }
             }}
           >

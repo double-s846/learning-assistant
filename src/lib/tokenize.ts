@@ -204,11 +204,9 @@ export function lemmaCandidates(word: string): string[] {
     push(stem.replace(/([^aeiou])\1$/, '$1'))
   }
 
-  // 比较级 / 最高级
+  // 只处理 -ier / -iest；通用 -er / -est 太容易误删单词词尾（如 consider → consid）。
   if (/ier$/.test(w)) push(w.replace(/ier$/, 'y'))
   if (/iest$/.test(w)) push(w.replace(/iest$/, 'y'))
-  if (/est$/.test(w)) push(w.replace(/est$/, ''))
-  if (/er$/.test(w)) push(w.replace(/er$/, ''))
 
   return out
 }
