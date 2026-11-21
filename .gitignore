@@ -29,3 +29,6 @@ Thumbs.db
 /coverage/
 /playwright-report/
 /docs/_screenshots/*.tmp.png
+
+# ---- 个人本地临时文件（勿提交）----
+/Learning Assistant*.txt
