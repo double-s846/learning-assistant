@@ -1,0 +1,92 @@
+/* 模块 B · 生词本抽屉的局部样式。只在 VocabDrawer.tsx 里 import，不改共享的 app.css。 */
+
+.vocab-toolbar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.vocab-toolbar__search,
+.vocab-toolbar__actions {
+  grid-column: 1 / -1;
+}
+
+.vocab-toolbar__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.vocab-card {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.vocab-card--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+.vocab-card__check {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.vocab-card__check input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.vocab-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.vocab-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.vocab-tag__name,
+.vocab-tag__x {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.vocab-tag__x {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.vocab-tag__x:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+.vocab-tag__input {
+  width: 88px;
+  padding: 3px 9px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.vocab-tag__input:focus {
+  border-style: solid;
+  outline: none;
+}
