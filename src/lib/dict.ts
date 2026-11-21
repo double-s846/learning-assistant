@@ -19,6 +19,7 @@
 
 import type { DictResult, DictSource } from '@/types'
 import { guessLemma, lemmaCandidates, normalizeWord } from './tokenize'
+import { translateToChinese } from './translate'
 
 interface GlossaryEntry {
   pos?: string
@@ -101,14 +102,14 @@ async function fromFreeApi(word: string, lemma: string, timeoutMs: number): Prom
     const glossEn = meaning?.definitions?.[0]?.definition
     if (!glossEn) return null
 
-    // 免费接口只给英文释义；用离线词表补中文，补不到就先展示英文
+    // The dictionary only provides English definitions; lookup() translates them when possible.
     const local = fromLocal(word)
     return {
       word,
       lemma: local?.lemma ?? lemma,
       phonetic: first?.phonetic ?? local?.phonetic,
       pos: meaning?.partOfSpeech ?? local?.pos,
-      glossZh: local?.glossZh ?? '（该词暂无内置中文释义，可手动补充）',
+      glossZh: local?.glossZh ?? '',
       glossEn,
       source: local ? 'local' : 'free-api',
     }
@@ -153,11 +154,33 @@ export async function lookup(rawWord: string, options: LookupOptions = {}): Prom
   }
 
   if (allowNetwork) {
-    const remote = (await fromFreeApi(word, lemma, timeoutMs)) ?? (await fromPaidApi(word, lemma))
-    if (remote) {
-      cache.set(cacheKey, remote)
-      return remote
+    const dictionaryResult = await fromFreeApi(word, lemma, timeoutMs)
+    if (dictionaryResult) {
+      if (dictionaryResult.glossEn) {
+        const translatedGloss = await translateToChinese(dictionaryResult.glossEn, timeoutMs)
+        if (translatedGloss) {
+          dictionaryResult.glossZh = translatedGloss
+          dictionaryResult.source = 'dictionary-translation'
+        }
+      }
+      cache.set(cacheKey, dictionaryResult)
+      return dictionaryResult
     }
+
+    const translatedWord = await translateToChinese(word, timeoutMs)
+    if (translatedWord) {
+      const translatedResult: DictResult = {
+        word,
+        lemma,
+        glossZh: translatedWord,
+        source: 'machine-translation',
+      }
+      cache.set(cacheKey, translatedResult)
+      return translatedResult
+    }
+
+    const paidResult = await fromPaidApi(word, lemma)
+    if (paidResult) return paidResult
   }
 
   // ④ 兜底：不抛错，交给 UI 引导手动填写
@@ -167,7 +190,6 @@ export async function lookup(rawWord: string, options: LookupOptions = {}): Prom
     glossZh: '',
     source: 'manual',
   }
-  cache.set(cacheKey, fallback)
   return fallback
 }
 
@@ -175,6 +197,8 @@ export async function lookup(rawWord: string, options: LookupOptions = {}): Prom
 export const DICT_SOURCE_LABEL: Record<DictSource, string> = {
   local: '内置离线词表',
   'free-api': '免费在线词典（dictionaryapi.dev）',
+  'machine-translation': '机器翻译（MyMemory）',
+  'dictionary-translation': '免费词典释义 + 机器翻译（MyMemory）',
   'paid-api': '在线词典（需自备 key）',
   manual: '尚未查到释义，可手动填写',
 }

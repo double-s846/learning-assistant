@@ -35,7 +35,8 @@ export const STORAGE_KEYS = {
   seeded: `${NS}:seeded`,
 } as const
 
-export const SCHEMA_VERSION = 1
+// Version 2 adds optional PDF references/files; existing v1 text data needs no rewrite.
+export const SCHEMA_VERSION = 2
 
 /** 默认设置。新增设置项时改这里，读取时会与用户已有值合并 */
 export const DEFAULT_SETTINGS: Settings = {
@@ -94,6 +95,48 @@ export function remove(key: string): void {
   } catch (err) {
     console.warn(`[storage] 删除 ${key} 失败`, err)
   }
+}
+
+/* PDF files use IndexedDB's Blob storage rather than localStorage's small quota. */
+function openFileDatabase(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('la:v1:files', 1)
+    request.onupgradeneeded = () => request.result.createObjectStore('pdf')
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(new Error('无法打开本机 PDF 存储，请检查浏览器是否允许本地存储。', { cause: request.error }))
+    request.onblocked = () => reject(new Error('PDF 存储被其他窗口占用，请关闭其他窗口后重试。'))
+  })
+}
+
+async function fileTransaction<T>(mode: IDBTransactionMode, operation: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+  const database = await openFileDatabase()
+  try {
+    return await new Promise<T>((resolve, reject) => {
+      const transaction = database.transaction('pdf', mode)
+      const request = operation(transaction.objectStore('pdf'))
+      transaction.oncomplete = () => resolve(request.result)
+      transaction.onabort = () => reject(new Error('PDF 保存或读取失败，可能是本机存储空间不足。', { cause: transaction.error }))
+      transaction.onerror = () => { /* onabort reports the transaction failure. */ }
+    })
+  } finally {
+    database.close()
+  }
+}
+
+export const pdfFileStore = {
+  get: (id: string): Promise<Blob | undefined> => fileTransaction('readonly', (store) => store.get(id)),
+  save: (id: string, file: Blob) => fileTransaction('readwrite', (store) => store.put(file, id)),
+  remove: (id: string) => fileTransaction('readwrite', (store) => store.delete(id)),
+  clear: () => fileTransaction('readwrite', (store) => store.clear()),
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('读取 PDF 备份失败。', { cause: reader.error }))
+    reader.readAsDataURL(new Blob([blob], { type: 'application/pdf' }))
+  })
 }
 
 /* ------------------------------------------------------- 领域级访问方法 */
@@ -178,20 +221,28 @@ export const settingsStore = {
 
 /* ------------------------------------------------------------ 备份迁移 */
 
-export function exportSnapshot(): BackupSnapshot {
+export async function exportSnapshot(): Promise<BackupSnapshot> {
+  const articles = articlesStore.all()
+  const pdfFiles: NonNullable<BackupSnapshot['pdfFiles']> = []
+  for (const id of new Set(articles.flatMap((article) => article.pdf ? [article.pdf.fileId] : []))) {
+    const blob = await pdfFileStore.get(id)
+    if (!blob) throw new Error('部分文章的原 PDF 已丢失，请重新导入 PDF 后再导出完整备份。')
+    pdfFiles.push({ id, dataUrl: await blobToDataUrl(blob) })
+  }
   return {
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     app: 'learning-assistant',
-    articles: articlesStore.all(),
+    articles,
     vocab: vocabStore.all(),
     progress: progressStore.all(),
     settings: settingsStore.get(),
+    pdfFiles,
   }
 }
 
 /** 导入快照。返回是否成功，并把失败原因交给调用方展示 */
-export function importSnapshot(raw: unknown): { ok: boolean; message: string } {
+export async function importSnapshot(raw: unknown): Promise<{ ok: boolean; message: string }> {
   const snap = raw as Partial<BackupSnapshot> | null
   if (!snap || snap.app !== 'learning-assistant') {
     return { ok: false, message: '这不是本应用导出的备份文件' }
@@ -203,14 +254,29 @@ export function importSnapshot(raw: unknown): { ok: boolean; message: string } {
     return { ok: false, message: '备份内容不完整' }
   }
 
-  articlesStore.save(snap.articles)
+  const neededFiles = new Set(snap.articles.flatMap((article) => article.pdf ? [article.pdf.fileId] : []))
+  const files = Array.isArray(snap.pdfFiles) ? snap.pdfFiles : []
+  for (const id of neededFiles) {
+    const entry = files.find((file) => file.id === id)
+    if (!entry || !/^data:application\/pdf;base64,[A-Za-z0-9+/=\s]+$/.test(entry.dataUrl)) {
+      return { ok: false, message: '备份缺少原 PDF 文件或 PDF 数据无效，尚未覆盖当前文章。' }
+    }
+  }
+  for (const id of neededFiles) {
+    const entry = files.find((file) => file.id === id)!
+    const blob = await (await fetch(entry.dataUrl)).blob()
+    await pdfFileStore.save(id, blob)
+  }
+
+  if (!articlesStore.save(snap.articles)) return { ok: false, message: '文章保存失败，请检查浏览器存储空间。' }
   vocabStore.save(snap.vocab)
   progressStore.save(Array.isArray(snap.progress) ? snap.progress : [])
   settingsStore.save({ ...DEFAULT_SETTINGS, ...(snap.settings ?? {}) })
   return { ok: true, message: '导入成功' }
 }
 
-export function clearAll(): void {
+export async function clearAll(): Promise<void> {
+  await pdfFileStore.clear()
   Object.values(STORAGE_KEYS).forEach((key) => remove(key))
 }
 

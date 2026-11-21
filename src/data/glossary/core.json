@@ -1,4 +1,5 @@
 {
+  "consider": { "pos": "v.", "phonetic": "/kənˈsɪdə(r)/", "zh": "考虑；认为；顾及", "en": "to think about something carefully" },
   "_meta": {
     "name": "core-800 离线核心词表（示例版）",
     "description": "内置在仓库里的最小离线词表。它保证「不联网、不填 key」时查词依然可用，是三级降级链条的第一级。词条按词元（lemma）索引。",

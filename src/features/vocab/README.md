@@ -8,7 +8,7 @@
 
 | 文件 | 内容 |
 |---|---|
-| `src/lib/dict.ts` | `lookup(word)` 三级降级查词；`DICT_SOURCE_LABEL` 来源中文名 |
+| `src/lib/dict.ts` | `lookup(word)` 离线词库、免费英文词典与中文机器翻译降级；`DICT_SOURCE_LABEL` 来源中文名 |
 | `src/lib/storage.ts` | `vocabStore.all() / upsert() / removeById() / subscribe()` |
 | `src/lib/hooks.ts` | `useVocab()` 拿数据并自动订阅变化 |
 | `src/lib/article.ts` | `findSentence()` / `countOccurrences()`（该词在本文出现几次） |

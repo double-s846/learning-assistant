@@ -10,6 +10,7 @@ import type { Article, Paragraph, Sentence } from '@/types'
 import type { SeedArticle } from '@/data/sample-articles'
 import { createId, ID_PREFIX } from './id'
 import { estimateReadingMinutes, splitParagraphs, splitSentences } from './tokenize'
+import { splitPdfText } from '../features/library/pdf-pages'
 
 export interface ArticleInput {
   title: string
@@ -18,14 +19,21 @@ export interface ArticleInput {
   sourceUrl?: string
   author?: string
   license: string
+  pdf?: Article['pdf']
+  pdfFile?: File
+  pdfPageCount?: number
 }
 
 export function buildArticle(input: ArticleInput): Article {
-  const blocks = splitParagraphs(input.text)
-  const paragraphs: Paragraph[] = blocks.map((text, index) => ({
+  const sections = input.pdfPageCount ? splitPdfText(input.text, input.pdfPageCount) : [{ text: input.text }]
+  const blocks = sections.flatMap((section) => splitParagraphs(section.text).map((text) => ({
+    text, pdfPage: 'pageNumber' in section ? section.pageNumber : undefined,
+  })))
+  const paragraphs: Paragraph[] = blocks.map((block, index) => ({
     id: createId(ID_PREFIX.paragraph),
     index,
-    text,
+    text: block.text,
+    ...(block.pdfPage ? { pdfPage: block.pdfPage } : {}),
   }))
 
   return {
@@ -37,7 +45,8 @@ export function buildArticle(input: ArticleInput): Article {
     license: input.license.trim() || '来源未标注',
     importedAt: new Date().toISOString(),
     paragraphs,
-    readingMinutes: estimateReadingMinutes(blocks.join(' ')),
+    readingMinutes: estimateReadingMinutes(blocks.map((block) => block.text).join(' ')),
+    ...(input.pdf ? { pdf: input.pdf } : {}),
   }
 }
 

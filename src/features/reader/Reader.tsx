@@ -12,10 +12,11 @@
  */
 
 import type { MouseEvent as ReactMouseEvent } from 'react'
-import type { Article, ReadingMode, Settings, VocabEntry } from '@/types'
+import type { Article, Paragraph, ReadingMode, Settings, VocabEntry } from '@/types'
 import { getSentencesByParagraph } from '@/lib/article'
 import { tokenizeWords } from '@/lib/tokenize'
 import type { WordSelection } from '@/features/vocab/WordPopover'
+import { PdfDocumentProvider, PdfPageFigure } from './PdfPageFigure'
 
 interface Props {
   article: Article
@@ -42,8 +43,25 @@ export function Reader({
   const byParagraph = getSentencesByParagraph(article)
   const savedLemmas = new Set(vocab.map((v) => v.lemma))
   const mode: ReadingMode = settings.mode
+  const paragraphsByPage = new Map<number, Paragraph[]>()
+  for (const paragraph of article.paragraphs) {
+    const page = paragraph.pdfPage ?? 0
+    const list = paragraphsByPage.get(page) ?? []
+    list.push(paragraph)
+    paragraphsByPage.set(page, list)
+  }
+  const groups = article.pdf
+    ? [
+        { page: 0, paragraphs: paragraphsByPage.get(0) ?? [] },
+        ...Array.from({ length: article.pdf.pageCount }, (_, index) => ({
+          page: index + 1,
+          paragraphs: paragraphsByPage.get(index + 1) ?? [],
+        })),
+      ]
+    : [{ page: 0, paragraphs: article.paragraphs }]
 
   return (
+    <PdfDocumentProvider key={article.id} fileId={article.pdf?.fileId}>
     <div className="read">
       <div className="read__inner">
         <h1 className="read__title">{article.title}</h1>
@@ -59,7 +77,10 @@ export function Reader({
 
         <div className="read__rule" />
 
-        {article.paragraphs.map((paragraph) => {
+        {groups.map((group) => (
+          <section key={group.page} className="read__page" aria-label={group.page ? `PDF 第 ${group.page} 页` : undefined}>
+          {group.page > 0 && <h2 className="read__page-label">PDF 第 {group.page} 页</h2>}
+          {group.paragraphs.map((paragraph) => {
           const sentences = byParagraph.get(paragraph.id) ?? []
           const isRead = readParagraphIds.includes(paragraph.id)
 
@@ -125,8 +146,12 @@ export function Reader({
               ))}
             </p>
           )
-        })}
+          })}
+          {group.page > 0 && <PdfPageFigure pageNumber={group.page} />}
+          </section>
+        ))}
       </div>
     </div>
+    </PdfDocumentProvider>
   )
 }

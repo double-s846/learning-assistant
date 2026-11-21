@@ -37,6 +37,7 @@ export function WordPopover({ selection, onClose }: Props) {
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [manualGloss, setManualGloss] = useState('')
+  const [lookupAttempt, setLookupAttempt] = useState(0)
   const boxRef = useRef<HTMLDivElement>(null)
 
   // 每次换词重新查。组件由父级用 key 强制重建，因此这里只负责「查」，
@@ -53,7 +54,7 @@ export function WordPopover({ selection, onClose }: Props) {
     return () => {
       cancelled = true
     }
-  }, [selection.word])
+  }, [selection.word, lookupAttempt])
 
   // 点外面 / Esc 关闭
   useEffect(() => {
@@ -105,6 +106,13 @@ export function WordPopover({ selection, onClose }: Props) {
     setTimeout(onClose, 420)
   }
 
+  function retryLookup() {
+    setManualGloss('')
+    setResult(null)
+    setLoading(true)
+    setLookupAttempt((attempt) => attempt + 1)
+  }
+
   // 气泡定位：优先放上方，空间不够就放下方
   const top = selection.y > 320 ? selection.y - 20 : selection.y + 28
   const style = {
@@ -134,7 +142,9 @@ export function WordPopover({ selection, onClose }: Props) {
             <p className="pop__gloss">{result.glossZh}</p>
           ) : (
             <p className="pop__gloss pop__gloss--empty">
-              未收录该词，请手动填写释义后加入生词本。
+              {result.glossEn
+                ? '已找到英文释义，但自动翻译暂不可用。请补充中文释义后加入生词本。'
+                : '暂未查到释义，可以重试联网查询或手动填写。'}
             </p>
           )}
 
@@ -165,6 +175,11 @@ export function WordPopover({ selection, onClose }: Props) {
         >
           {saved ? '已加入生词本 ✓' : '加入生词本'}
         </button>
+        {needsManual && (
+          <button className="btn btn--ghost" onClick={retryLookup} disabled={loading}>
+            重试查词和翻译
+          </button>
+        )}
         <button className="btn btn--ghost" onClick={onClose}>
           关闭
         </button>

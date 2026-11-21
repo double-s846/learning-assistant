@@ -28,6 +28,7 @@
 |---|---|---|
 | DeepSeek Harness（deepseek 模型） | 网页工作区 | 工程脚手架、组件初稿、文档起草、报错排查 |
 | 浏览器的开发者工具 AI 辅助（可选） | — | 个别 CSS 布局问题 |
+| OpenAI Codex | 本地代码工作区 | PDF 导入功能、文本提取与浏览器验证（11-20） |
 | GitHub Copilot（个别成员，可选） | — | 行内补全（仅补全，不生成整文件） |
 
 > 若后续有成员使用其他工具（Claude / ChatGPT / 通义 / 文心等），请在此表追加一行。
@@ -50,6 +51,11 @@
 <!-- 追加格式：
 | MM-DD | 姓名 | 工具 | 用途 / 提示词摘要 | 产出文件 | 人工做的实质性修改 |
 -->
+
+| 日期 | 成员 | 工具 | 用途 / 提示词摘要 | 产出文件 | 人工复核状态 |
+|---|---|---|---|---|---|
+| 11-20 | 本地开发（成员待填） | OpenAI Codex | “支持导入 PDF 论文，提取后进入已有阅读和查词流程” | `features/library/ImportDialog.tsx`、`pdf.ts`、`pdf-text.ts`、`App.tsx`、导入样式、依赖与相关测试/文档 | 尚待负责人复核；本次实现、排版整理与自动检查由 Codex 完成，未将其记为人工修改。PDF 本身在浏览器本地处理，不发送给 AI 或第三方服务。 |
+| 11-20 | 本地开发（成员待填） | OpenAI Codex | “尽量保留 PDF 中的图片” | `features/reader/PdfPageFigure.tsx`、`Reader.tsx`、`library/pdf-pages.ts`、`pdf.ts`、`ImportDialog.tsx`、`lib/storage.ts`、`lib/article.ts`、`types.ts`、备份设置与测试 | 尚待负责人复核；采用原页渲染兼容照片和矢量图表，PDF 存于本机 IndexedDB，随 JSON 备份导出/恢复。自动测试由 Codex 执行，不冒称人工复核。 |
 
 ### 关于上表的两点说明
 

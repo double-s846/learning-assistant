@@ -33,6 +33,11 @@ export interface Article {
   paragraphs: Paragraph[]
   /** 预估阅读时长（分钟），导入时计算一次 */
   readingMinutes: number
+  /** 原 PDF 存在本机 IndexedDB，按页保留图像、矢量图和公式。 */
+  pdf?: {
+    fileId: string
+    pageCount: number
+  }
 }
 
 export interface Paragraph {
@@ -40,6 +45,8 @@ export interface Paragraph {
   /** 在文章内的序号，从 0 开始 */
   index: number
   text: string
+  /** 可选的 PDF 来源页码；旧文章没有该字段。 */
+  pdfPage?: number
 }
 
 /** 句子。由 `lib/tokenize.ts` 在导入时切好并缓存，避免每次渲染重算 */
@@ -208,7 +215,13 @@ export interface Settings {
  *     → paid-api（有道/百度，需用户自己填 key）
  *     → manual（都没有时用户手填）
  */
-export type DictSource = 'local' | 'free-api' | 'paid-api' | 'manual'
+export type DictSource =
+  | 'local'
+  | 'free-api'
+  | 'machine-translation'
+  | 'dictionary-translation'
+  | 'paid-api'
+  | 'manual'
 
 export interface DictResult {
   word: string
@@ -231,4 +244,6 @@ export interface BackupSnapshot {
   vocab: VocabEntry[]
   progress: ReadingProgress[]
   settings: Settings
+  /** 原 PDF 随备份导出为 data URL，旧版文字备份可省略。 */
+  pdfFiles?: Array<{ id: string; dataUrl: string }>
 }
