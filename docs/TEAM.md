@@ -101,39 +101,46 @@ decorations={{
 **你的分支里不要出现 `Reader.tsx` 的改动**——真需要新插槽就在群里提，由公共层成员加。
 API 细节见 `src/features/reader/README.md`。
 
-### 成员
+### 成员与认领（已确定）
 
-| 成员 | GitHub | 分支 | 认领模块 |
+| 成员 | GitHub | 分支 | 负责模块 |
 |---|---|---|---|
-| 你（负责人） | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 公共层 + **模块 D 长句解析** + 集成 + 演示 |
-| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-<模块>` | 待认领 |
-| Selena | [@Selena14111](https://github.com/Selena14111) | `dev/Selena14111-<模块>` | 待认领 |
-| zouyujing | [@zouyujing20070207](https://github.com/zouyujing20070207) | `dev/zouyujing20070207-<模块>` | 待认领 |
+| double-s846（负责人） | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 公共层与架构、阅读器插槽、**模块 E 朗读跟读**、集成、文档、演示 |
+| Selena | [@Selena14111](https://github.com/Selena14111) | `dev/Selena14111-b` | **模块 B** 查词与生词本 |
+| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-c` | **模块 C** 复习队列与日历 |
+| zouyujing | [@zouyujing20070207](https://github.com/zouyujing20070207) | `dev/zouyujing20070207-d` | **模块 D** 长句解析（在已完成的规则层上做增强） |
 
-### 待认领的 3 个模块（D 由负责人承担）
+> 每人的具体交付清单、第一个 commit、验收标准见 **[ONBOARDING.md](ONBOARDING.md)**。
+> 分支名一旦确定不要再改，否则 PR 记录会断。
 
-| 模块 | 目录 | 要交付什么 | 难度 | 认领 |
-|---|---|---|---|---|
-| **B 查词与生词本** | `src/features/vocab/` | 生词卡列表增强、搜索、按文章筛选、标签、批量删除、导出 CSV、**整句翻译** | 中 | 待认领 |
-| **C 复习队列与日历** | `src/features/review/` | 今日复习队列 UI、Again/Good/Easy 三档评分、日历热力图、每日目标完成度、**记忆曲线** | 中 | 待认领 |
-| **D 长句解析** | `src/features/parse/` | ~~实现 `analyzeSentence()`~~ **✅ 规则层已完成**（从句切分 + 主干抽取 + 中文讲解 + 8 个单测）；剩余可选项：LLM 增强、正文内联标注 | **难** | **double-s846（已完成）** |
-| **E 朗读与跟读** | `src/features/tts/` | 逐句朗读、当前句高亮跟随、自动滚动、语速与音色选择、暂停/继续、**阅读时长统计** | 简单 | 待认领 |
+### 四个模块与状态
 
-> 按"复杂少做、简单多做"配平：D 最难，由最熟代码的人承担；E 最轻，附带一个小进阶（阅读时长）。
-> B 和 C 难度相当，剩下三人任选，选完把"待认领"改成自己的 GitHub id 即可（改这一处就够，不要动别的表）。
+| 模块 | 目录 | 交付内容 | 难度 | 负责人 | 状态 |
+|---|---|---|---|---|---|
+| **B 查词与生词本** | `src/features/vocab/` | 搜索、按文章/盒子筛选、标签、批量删除、导出 CSV、**整句翻译** | 中 | Selena14111 | 🚧 待开工 |
+| **C 复习队列与日历** | `src/features/review/` | 复习卡片、三档评分、日历热力图、记忆曲线、每日目标 | 中 | jz-Gong10 | 🚧 入口已接好 |
+| **D 长句解析** | `src/features/parse/` | 规则层**已完成**（`lib/clause.ts` + 8 单测）；接手做：正文内联标注、接触/并列从句、缓存、可选 LLM 增强 | **难** | zouyujing20070207 | 🟡 规则层已交付 |
+| **E 朗读与跟读** | `src/features/tts/` | 逐句朗读、当前句高亮跟随、自动滚动、语速音色、暂停继续、**阅读时长统计** | 简单 | double-s846 | 🚧 待开工 |
 
-### 每个模块的第一步（复制即用）
+> 配平逻辑：D 最难，前一半由最熟代码的人先做掉（否则会卡住整个赛题的基础功能点 7）；
+> 接手的人做"从能跑到好用"的增强，工作量足够且有展示价值。
+> E 最轻，但要动 `App.tsx` 的 `decorations` 装配与全局播放状态，归负责集成的人。
 
-**模块 C 的第一步**：`lib/srs.ts` 里已经有 `buildReviewQueue()` / `reviewEntry()` / `monthGrid()` / `reviewCountByDay()`，你只需要写 UI：
+### 每个模块的第一步（完整清单见 ONBOARDING.md）
 
-1. 在 `src/features/review/ReviewPanel.tsx` 新建组件，用 `useVocab()` 拿数据；
-2. `const queue = buildReviewQueue(vocab)` 得到今日待复习；
-3. 显示卡片 → 点「没记住/记得/很简单」→ `vocabStore.upsert(reviewEntry(entry, grade))`；
-4. 日历用 `monthGrid(year, month)` 生成 42 格，`reviewCountByDay(vocab)` 取每天次数上色。
+**模块 B（Selena）**：读 `src/features/vocab/README.md` → 跑起来点 3 个词进生词本 →
+在 `VocabDrawer.tsx` 顶部加搜索框与"按文章筛选"下拉。第一个提交写
+`feat(vocab): 生词本支持搜索与按文章筛选`。
 
-**模块 D 的第一步**：打开 `src/features/parse/ParsePanel.tsx`，找到 `analyzeSentence()`，按文件顶部注释里的路线实现。**先做离线规则层，别一上来接大模型。**
+**模块 C（宫霁祯）**：入口已经接好（顶栏「复习」按钮 → `ReviewPanel.tsx` 占位）。
+读 `src/features/review/README.md` → 把占位卡片换成真正的复习卡片 + 三档评分。
+算法全部在 `lib/srs.ts`（已有 9 个单测），**你只写界面**。
 
-**模块 E 的第一步**：新建 `src/features/tts/useTTS.ts`：
+**模块 D（zouyujing）**：规则层已完成，先读 `src/features/parse/README.md` 与
+`docs/ARCHITECTURE.md` 第 6 节 → 然后从**正文内联标注 `ClauseMarks.tsx`** 开始
+（展示价值最高），接线找我加一行。
+
+**模块 E（负责人）**：新建 `src/features/tts/useTTS.ts`：
 
 ```ts
 // 用浏览器原生能力，零依赖零费用
@@ -142,7 +149,7 @@ utter.lang = 'en-US'
 utter.rate = settings.ttsRate
 speechSynthesis.speak(utter)
 // 逐句：onend 里取下一句；当前句 id 存 state
-// 高亮：在 App.tsx 的 decorations 里加 sentenceClassName，不要改 Reader.tsx
+// 高亮：在 App.tsx 的 decorations 里加 sentenceClassName；滚动用 data-sentence-id（已加好）
 ```
 
 ---

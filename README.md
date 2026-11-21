@@ -228,14 +228,15 @@ learning-assistant/
 ## 团队分工
 
 详细分工、协作约定、提交规范见 **[docs/TEAM.md](docs/TEAM.md)**；
-每个提交归属哪个成员、哪个目录，以及评审如何用三条命令复核，见 **[docs/CONTRIBUTION.md](docs/CONTRIBUTION.md)**。
+每个提交归属哪个成员、哪个目录，以及评审如何用三条命令复核，见 **[docs/CONTRIBUTION.md](docs/CONTRIBUTION.md)**；
+每人的交付清单与开工步骤见 **[docs/ONBOARDING.md](docs/ONBOARDING.md)**。
 
 | 成员 | GitHub | 个人分支 | 负责模块 |
 |---|---|---|---|
-| double-s846 | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 公共层与架构、阅读器、设置、**模块 D 长句解析**、集成、文档与测试 |
-| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-<模块>` | 待认领（B 查词与生词本 / C 复习与日历 / E 朗读跟读） |
-| Selena | [@Selena14111](https://github.com/Selena14111) | `dev/Selena14111-<模块>` | 待认领（同上） |
-| zouyujing | [@zouyujing20070207](https://github.com/zouyujing20070207) | `dev/zouyujing20070207-<模块>` | 待认领（同上） |
+| double-s846 | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 公共层与架构、阅读器插槽、**长句解析规则层**、单元测试与文档、**模块 E 朗读跟读**、集成与演示 |
+| Selena | [@Selena14111](https://github.com/Selena14111) | `dev/Selena14111-b` | **模块 B** 查词与生词本（搜索/筛选/标签/CSV/整句翻译） |
+| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-c` | **模块 C** 复习队列与日历（三档评分/热力图/记忆曲线） |
+| zouyujing | [@zouyujing20070207](https://github.com/zouyujing20070207) | `dev/zouyujing20070207-d` | **模块 D** 长句解析增强（正文内联标注/接触从句/缓存/可选 LLM） |
 
 **协作方式**：一人一分支 → 开 PR → 以 **Merge commit** 合入 `main`（不用 Squash，否则提交粒度被压平、分工统计失真）。
 PR 记录即分工证据，同时承载 AI 使用说明（见 [PR 模板](.github/PULL_REQUEST_TEMPLATE.md)）。

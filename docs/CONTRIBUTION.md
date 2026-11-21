@@ -11,36 +11,36 @@
 
 | 成员 | GitHub | 个人分支 | 提交数 | 负责范围 |
 |---|---|---|---|---|
-| double-s846 | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 9 | **地基与架构**：工程脚手架、数据契约、存储层、文本处理、查词降级、SRS 算法、阅读器与装饰层插槽、双模式、导入、设置与备份、单元测试、**模块 D 长句解析**、集成与文档 |
-| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-<模块>` | 0 | 待认领（B / C / E 之一） |
-| Selena | [@Selena14111](https://github.com/Selena14111) | `dev/Selena14111-<模块>` | 0 | 待认领（B / C / E 之一） |
-| zouyujing | [@zouyujing20070207](https://github.com/zouyujing20070207) | `dev/zouyujing20070207-<模块>` | 0 | 待认领（B / C / E 之一） |
+| double-s846（负责人） | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 14 | **地基与架构**：工程脚手架、数据契约、存储层、文本处理、查词降级、SRS 算法、阅读器与装饰层插槽、双模式、导入、设置与备份、**长句解析规则层**、单元测试（28 例）、全部文档、集成与演示；**模块 E 朗读跟读** |
+| Selena | [@Selena14111](https://github.com/Selena14111) | `dev/Selena14111-b` | 0 | **模块 B** 查词与生词本：搜索、筛选、标签、批量删除、CSV 导出、整句翻译 |
+| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-c` | 0 | **模块 C** 复习队列与日历：复习卡片、三档评分、日历热力图、记忆曲线、每日目标 |
+| zouyujing | [@zouyujing20070207](https://github.com/zouyujing20070207) | `dev/zouyujing20070207-d` | 0 | **模块 D** 长句解析增强：正文内联标注、接触/并列从句识别、解析缓存、可选 LLM 增强、补测试 |
 
 > 说明：
-> 1. 当前仓库的全部历史提交 author 均为 `double-s846`，因为地基（含并行开发所需的公共层）由该成员一人搭建；
->    其他成员开始提交后会以各自 GitHub 账号出现在记录中，无需额外标注。
-> 2. 模块 → 成员的对应关系**尚未最终确认**，认领后把上表"待认领"改成模块字母即可（只改这一列，别动别处）。
->    确认后本表会更新一次，提交数也会随开发进展更新 —— 以 §4 的三条命令输出为准。
-> 3. 分支名里的 `<模块>` 在认领后固定下来（例如 `dev/jz-Gong10-c`），一旦确定不要再改名，否则 PR 记录会断。
+> 1. 当前仓库的全部历史提交 author 均为 `double-s846`，因为地基（含并行开发所需的公共层、以及最难的模块 D 前半段）
+>    由该成员先做掉；其他成员开始提交后会以各自 GitHub 账号出现在记录中，无需额外标注。
+> 2. 提交数以 `git shortlog -sne` 的输出为准（见 §4），本表随开发进展更新。
+> 3. 分支名已固定，**不要改名**，否则 PR 记录会断。
+> 4. 每人的具体交付清单与验收标准见 [ONBOARDING.md](ONBOARDING.md)。
 
 ---
 
 ## 2. 分支模型
 
 ```
-main                    ← 集成分支，始终保持"能跑"。受保护：不允许直接 push
- ├─ dev/double-s846                   ← 负责人（地基 + 公共层 + 模块 D + 集成）
- ├─ dev/jz-Gong10-<模块>              ← 宫霁祯
- ├─ dev/Selena14111-<模块>            ← Selena
- └─ dev/zouyujing20070207-<模块>      ← zouyujing
+main                                  ← 集成分支，始终保持"能跑"。受保护：不允许直接 push
+ ├─ dev/double-s846                   ← 负责人（公共层 + 模块 E 朗读 + 集成 + 演示）
+ ├─ dev/Selena14111-b                 ← Selena       · 模块 B 查词与生词本
+ ├─ dev/jz-Gong10-c                   ← 宫霁祯        · 模块 C 复习与日历
+ └─ dev/zouyujing20070207-d           ← zouyujing    · 模块 D 长句解析增强
 ```
 
-**待认领的三个模块对应三条分支**：B（查词与生词本）/ C（复习队列与日历）/ E（朗读跟读）。
-D（长句解析）由负责人承担，因为要动 `Reader.tsx` 与 `lib/`。
+**分支与模块已经固定，不再变更。** 每人的交付清单见 [ONBOARDING.md](ONBOARDING.md)。
+D 的规则层由负责人先行完成（避免卡住基础功能点），接手人做增强 —— 分工表里如实写成两段。
 
 **规则**
 
-1. **一人一分支**，长期存在，不要每天新建；认领模块后把 `<模块>` 换成 `b` / `c` / `e` 并固定。
+1. **一人一分支**，长期存在，不要每天新建，也不要改名（改名会让 PR 记录断开）。
 2. 所有改动先提交到自己的 `dev/...`，再开 PR 合入 `main`；**不允许**直接往 `main` push。
 3. `main` 必须始终能跑：PR 合并前至少自测 `npm run lint && npm run typecheck && npm test && npm run build`。
 4. **禁止 force push `main`**；个人分支允许 `--force-with-lease`（只用于整理自己未合并的提交）。
@@ -48,6 +48,8 @@ D（长句解析）由负责人承担，因为要动 `Reader.tsx` 与 `lib/`。
    `git shortlog` 就统计不出工作量，分工证据直接失效。
 6. **不允许在自己的分支里改 `src/features/reader/Reader.tsx`**：那是三个模块的交汇点，
    已改成装饰层插槽（`decorations`），通过 `src/App.tsx` 装配。需要新插槽就提，由公共层加。
+7. **分支必须从最新的 `origin/main` 拉**：`main` 已包含插槽重构与长句解析，
+   从旧提交拉分支会导致 `Reader.tsx` 的 props 对不上、编译报错。
 
 **为什么这样分**：GitHub 的 PR 页面会自动统计「这个 PR 由谁提交、改了多少文件、涉及哪些目录」，
 评审打开 PR 列表就能看到四个人的四条 PR，比看 `git log` 直观得多，也比任何"分工说明"可信。
