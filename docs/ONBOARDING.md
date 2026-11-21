@@ -95,7 +95,9 @@ npm run lint && npm run typecheck && npm test && npm run build
 
 **分支**：`dev/jz-Gong10-c` · **目录**：`src/features/review/`
 
-> 建分支：`git switch -c dev/jz-Gong10-c origin/main`
+> 🟢 **状态：你已经在 66a174a 里实现了复习与日历**（复习卡片、三档评分、热力图、记忆曲线）。
+> 当前唯一待办是**合并适配**：你的分支基于旧 `main`，缺插槽重构与长句解析，
+> 合并 `origin/main` 后 `App.tsx` 有 3 处要改 —— 见 **[MERGE-NOTES.md](MERGE-NOTES.md)**。
 
 ## 你已经有这些（算法全部写好了，你只写界面）
 
