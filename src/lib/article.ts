@@ -6,10 +6,11 @@
  * 这是保证「点词位置」和「高亮位置」永远对得上的关键。
  */
 
-import type { Article, Paragraph, Sentence } from '@/types'
+import type { Article, Paragraph, Sentence, PdfFigure } from '@/types'
 import type { SeedArticle } from '@/data/sample-articles'
 import { createId, ID_PREFIX } from './id'
 import { estimateReadingMinutes, splitParagraphs, splitSentences } from './tokenize'
+import { splitPdfText, splitPdfFigures } from '../features/library/pdf-pages'
 
 export interface ArticleInput {
   title: string
@@ -18,14 +19,26 @@ export interface ArticleInput {
   sourceUrl?: string
   author?: string
   license: string
+  pdf?: Article['pdf']
+  pdfFile?: File
+  pdfPageCount?: number
+  pdfFigures?: PdfFigure[]
 }
 
 export function buildArticle(input: ArticleInput): Article {
-  const blocks = splitParagraphs(input.text)
-  const paragraphs: Paragraph[] = blocks.map((text, index) => ({
+  const sections = input.pdfPageCount ? splitPdfText(input.text, input.pdfPageCount) : [{ text: input.text }]
+  const figureIndices = new Set((input.pdfFigures ?? []).map((figure) => figure.index))
+  const blocks = sections.flatMap((section) => splitPdfFigures(section.text, figureIndices).flatMap<Pick<Paragraph, 'text' | 'pdfPage' | 'pdfFigure'>>((part) => {
+    const pdfPage = 'pageNumber' in section ? section.pageNumber : undefined
+    if (part.figure) return input.pdf ? [{ text: '', pdfPage, pdfFigure: part.figure }] : []
+    return splitParagraphs(part.text).map((text) => ({ text, pdfPage, pdfFigure: undefined }))
+  }))
+  const paragraphs: Paragraph[] = blocks.map((block, index) => ({
     id: createId(ID_PREFIX.paragraph),
     index,
-    text,
+    text: block.text,
+    ...(block.pdfPage ? { pdfPage: block.pdfPage } : {}),
+    ...(block.pdfFigure ? { pdfFigure: block.pdfFigure } : {}),
   }))
 
   return {
@@ -37,7 +50,8 @@ export function buildArticle(input: ArticleInput): Article {
     license: input.license.trim() || '来源未标注',
     importedAt: new Date().toISOString(),
     paragraphs,
-    readingMinutes: estimateReadingMinutes(blocks.join(' ')),
+    readingMinutes: estimateReadingMinutes(blocks.map((block) => block.text).join(' ')),
+    ...(input.pdf ? { pdf: input.pdf } : {}),
   }
 }
 
@@ -74,6 +88,7 @@ export function getSentences(article: Article): Sentence[] {
 
   const sentences: Sentence[] = []
   for (const paragraph of article.paragraphs) {
+    if (paragraph.pdfFigure) continue
     splitSentences(paragraph.text).forEach((span, index) => {
       sentences.push({
         id: sentenceIdOf(paragraph.id, index),

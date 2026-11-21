@@ -17,11 +17,12 @@ import { Sidebar } from '@/features/library/Sidebar'
 import { ImportDialog } from '@/features/library/ImportDialog'
 import { SettingsMenu } from '@/features/settings/SettingsMenu'
 import { ParsePanel } from '@/features/parse/ParsePanel'
+import { ReviewPanel } from '@/features/review/ReviewPanel'
 import { SAMPLE_ARTICLES } from '@/data/sample-articles'
 import { articleFromSeed, buildArticle } from '@/lib/article'
 import type { ArticleInput } from '@/lib/article'
 import { useArticles, useProgressList, useSettings, useVocab } from '@/lib/hooks'
-import { articlesStore, isSeeded, markSeeded, progressStore } from '@/lib/storage'
+import { articlesStore, isSeeded, markSeeded, progressStore, pdfFileStore } from '@/lib/storage'
 import { buildReviewQueue } from '@/lib/srs'
 
 import '@/styles/app.css'
@@ -35,6 +36,7 @@ export default function App() {
   const [currentId, setCurrentId] = useState<string | undefined>(undefined)
   const [importOpen, setImportOpen] = useState(false)
   const [vocabOpen, setVocabOpen] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [selection, setSelection] = useState<WordSelection | null>(null)
   const [parseTarget, setParseTarget] = useState<{ sentenceId: string; text: string } | null>(null)
@@ -67,7 +69,7 @@ export default function App() {
       ? current.readParagraphIds.filter((id) => id !== paragraphId)
       : [...current.readParagraphIds, paragraphId]
 
-    const total = article.paragraphs.length
+    const total = article.paragraphs.filter((paragraph) => !paragraph.pdfFigure).length
     const percent = Math.round((readParagraphIds.length / Math.max(1, total)) * 100)
 
     progressStore.upsert({
@@ -80,9 +82,13 @@ export default function App() {
     })
   }
 
-  function handleImport(input: ArticleInput) {
+  async function handleImport(input: ArticleInput) {
     const next = buildArticle(input)
-    articlesStore.add(next)
+    if (input.pdf && input.pdfFile) await pdfFileStore.save(input.pdf.fileId, input.pdfFile)
+    if (!articlesStore.save([next, ...articlesStore.all()])) {
+      if (input.pdf) await pdfFileStore.remove(input.pdf.fileId)
+      throw new Error('文章保存失败，可能是本机浏览器存储空间不足。请先导出备份，或缩短正文后重试。')
+    }
     setCurrentId(next.id)
   }
 
@@ -169,6 +175,18 @@ export default function App() {
             生词本 {vocab.length}
           </button>
 
+          <button className="btn" onClick={() => setImportOpen(true)}>
+            导入文章
+          </button>
+
+          <button
+            className="btn"
+            aria-pressed={reviewOpen}
+            onClick={() => setReviewOpen(true)}
+          >
+            复习{dueCount > 0 ? ` ${dueCount}` : ''}
+          </button>
+
           <button
             className="btn btn--ghost"
             aria-label="设置"
@@ -216,6 +234,14 @@ export default function App() {
           setVocabOpen(false)
         }}
       />
+
+      {reviewOpen && (
+        <ReviewPanel
+          entries={vocab}
+          settings={settings}
+          onClose={() => setReviewOpen(false)}
+        />
+      )}
 
       <SettingsMenu
         open={settingsOpen}

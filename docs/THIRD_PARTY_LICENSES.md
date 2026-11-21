@@ -11,9 +11,13 @@
 |---|---|---|---|---|
 | react | 19.3.1 | MIT | UI 框架 | https://react.dev |
 | react-dom | 19.3.1 | MIT | DOM 渲染 | https://react.dev |
+| pdfjs-dist | 5.4.624 | Apache-2.0 | 本地提取 PDF 文本、渲染原页图文，包含 worker、CMap、标准字体与图像解码器 | https://mozilla.github.io/pdf.js/ |
 
-**运行时依赖只有这两个**，没有 UI 组件库、没有状态管理库、没有 HTTP 库、没有日期库。
-这是刻意的选择：依赖越少，评委安装越顺、许可证清单越短、安全面越小。
+PDF.js 仅在选择 PDF 时加载，worker、CMap 和标准字体随构建产物发布，无需第三方 CDN。
+其他界面继续使用 React、浏览器原生 API 和项目已有样式。
+PDF.js 的 Foxit 标准字体使用 BSD 3-Clause，Liberation 字体使用 SIL OFL 1.1；
+对应 `LICENSE_FOXIT`、`LICENSE_LIBERATION` 会与字体资源一起输出到构建产物。
+图像解码器使用 PDF.js 包内的 JBIG2 / OpenJPEG / QCMS WASM 资源，随资源保留对应 `LICENSE_*` 文件。
 
 ## 2. 开发依赖（仅构建/检查时需要，不进入产物）
 
@@ -34,7 +38,7 @@
 
 ### 间接依赖
 
-以上开发依赖各自的传递依赖（共 162 个包，见 `package-lock.json`）全部为 MIT / ISC / Apache-2.0 / BSD 类宽松许可证，
+依赖数量和精确版本见 `package-lock.json`；现有依赖使用 MIT / ISC / Apache-2.0 / BSD 类宽松许可证，
 无 GPL / AGPL 类传染性许可证。逐项核对可执行：
 
 ```bash
@@ -63,10 +67,10 @@ npm ls --all --json | node -e "..."  # 读取各包 license 字段
 | 示例文章《The Fox and the Grapes》 | Aesop's Fables，George Fyler Townsend 英译（1867） | Public Domain | `src/data/sample-articles.ts` |
 | 离线核心词表 `core.json` | 团队整理编写 | CC BY 4.0 | `src/data/glossary/core.json` |
 | 站点图标 favicon.svg | 团队绘制 | MIT（随项目） | `public/favicon.svg` |
-| 字体 | **未打包任何字体文件**，全部使用系统字体栈（Georgia / Palatino / 宋体 / 思源系） | — | `src/styles/global.css` |
+| 界面字体 | 使用系统字体栈（Georgia / Palatino / 宋体 / 思源系） | — | `src/styles/global.css` |
+| PDF 文本提取所需标准字体与字符映射 | PDF.js 自带资源，仅在文档需要时加载 | BSD 3-Clause / SIL OFL 1.1 / Apache-2.0（各文件保留上游许可） | `pdfjs-dist/standard_fonts`、`pdfjs-dist/cmaps` |
 
-**不打包字体文件**是有意的：字体文件通常几百 KB 到几 MB，且不同字体许可证（OFL/Apache/商业）差异大，
-容易在"第三方许可证"这一项上出问题。使用系统字体栈零风险、零体积。
+界面不加载网络字体；PDF 专用字体资源不作为界面字体使用。
 
 ## 5. 本项目自身的许可
 
@@ -75,7 +79,7 @@ npm ls --all --json | node -e "..."  # 读取各包 license 字段
 
 ## 6. 维护约定
 
-1. **新增依赖前先问**：目前运行时依赖只有 2 个，任何新增都要在 `docs/TEAM.md` 里过一遍；
+1. **新增依赖前先问**：任何新增都要在 `docs/TEAM.md` 里过一遍；
 2. **新增后必须更新本文件**：包名 / 版本 / 许可证 / 用途四列都填；
 3. **禁止引入 GPL / AGPL 依赖**：会让整个项目的许可变复杂；
 4. **禁止引入来源不明的代码片段**：从 Stack Overflow 复制的片段需注明出处与许可证；

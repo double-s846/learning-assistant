@@ -98,6 +98,13 @@ test('词形还原：guessLemma 取首选候选，短词原样返回', () => {
   assert.equal(guessLemma('the'), 'the')
 })
 
+test('词形还原：不把正常以 er / est 结尾的单词误判为比较级', () => {
+  for (const word of ['Consider', 'water', 'number', 'interest', 'forest']) {
+    assert.deepEqual(lemmaCandidates(word), [])
+    assert.equal(guessLemma(word), word.toLowerCase())
+  }
+})
+
 test('归一化：小写并去掉首尾非字母字符', () => {
   assert.equal(normalizeWord('"Deteriorating,"'), 'deteriorating')
   assert.equal(normalizeWord('—word—'), 'word')
