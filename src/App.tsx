@@ -17,7 +17,6 @@ import { Sidebar } from '@/features/library/Sidebar'
 import { ImportDialog } from '@/features/library/ImportDialog'
 import { SettingsMenu } from '@/features/settings/SettingsMenu'
 import { ParsePanel } from '@/features/parse/ParsePanel'
-import { ReviewPanel } from '@/features/review/ReviewPanel'
 import { SAMPLE_ARTICLES } from '@/data/sample-articles'
 import { articleFromSeed, buildArticle } from '@/lib/article'
 import type { ArticleInput } from '@/lib/article'
@@ -36,7 +35,6 @@ export default function App() {
   const [currentId, setCurrentId] = useState<string | undefined>(undefined)
   const [importOpen, setImportOpen] = useState(false)
   const [vocabOpen, setVocabOpen] = useState(false)
-  const [reviewOpen, setReviewOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [selection, setSelection] = useState<WordSelection | null>(null)
   const [parseTarget, setParseTarget] = useState<{ sentenceId: string; text: string } | null>(null)
@@ -167,14 +165,6 @@ export default function App() {
             </button>
           </div>
 
-          <button
-            className="btn"
-            onClick={() => setReviewOpen(true)}
-            title={dueCount > 0 ? `${dueCount} 张到期，去复习` : '复习与日历'}
-          >
-            复习{dueCount > 0 ? ` ${dueCount}` : ''}
-          </button>
-
           <button className="btn" onClick={() => setVocabOpen(true)}>
             生词本 {vocab.length}
           </button>
@@ -225,13 +215,6 @@ export default function App() {
           setCurrentId(id)
           setVocabOpen(false)
         }}
-      />
-
-      <ReviewPanel
-        open={reviewOpen}
-        vocab={vocab}
-        dailyGoal={settings.dailyGoal}
-        onClose={() => setReviewOpen(false)}
       />
 
       <SettingsMenu
