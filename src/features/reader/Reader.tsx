@@ -93,6 +93,12 @@ export function Reader({
 }: Props) {
   const byParagraph = getSentencesByParagraph(article)
   const mode: ReadingMode = settings.mode
+  const canMarkRead = Array.isArray(readParagraphIds) && typeof onToggleParagraph === 'function'
+
+  /**
+   * PDF 文章按页分组渲染（PDF 导入由模块 C 引入，见 features/library/pdf.ts）。
+   * 普通粘贴导入的文章只有一个 page=0 的组，行为与之前完全一致。
+   */
   const paragraphsByPage = new Map<number, Paragraph[]>()
   for (const paragraph of article.paragraphs) {
     const page = paragraph.pdfPage ?? 0
@@ -109,7 +115,6 @@ export function Reader({
         })),
       ]
     : [{ page: 0, paragraphs: article.paragraphs }]
-  const canMarkRead = Array.isArray(readParagraphIds) && typeof onToggleParagraph === 'function'
 
   return (
     <PdfDocumentProvider key={article.id} fileId={article.pdf?.fileId}>
