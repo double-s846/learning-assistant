@@ -95,9 +95,8 @@ npm run lint && npm run typecheck && npm test && npm run build
 
 **分支**：`dev/jz-Gong10-c` · **目录**：`src/features/review/`
 
-> 🟢 **状态：你已经在 66a174a 里实现了复习与日历**（复习卡片、三档评分、热力图、记忆曲线）。
-> 当前唯一待办是**合并适配**：你的分支基于旧 `main`，缺插槽重构与长句解析，
-> 合并 `origin/main` 后 `App.tsx` 有 3 处要改 —— 见 **[MERGE-NOTES.md](MERGE-NOTES.md)**。
+> 🟢 **状态：复习卡片、三档评分、热力图和每日目标已实现**，并完成阅读器插槽与长句解析接口的合并适配。
+> 后续增强项为记忆曲线；合并约定继续参考 **[MERGE-NOTES.md](MERGE-NOTES.md)**。
 
 ## 你已经有这些（算法全部写好了，你只写界面）
 
@@ -115,7 +114,7 @@ npm run lint && npm run typecheck && npm test && npm run build
 | `GRADE_LABEL` | 三档评分中文名 |
 
 **入口已经接好**：顶栏「复习」按钮 → `ReviewPanel`（`src/features/review/ReviewPanel.tsx`）。
-这个文件里现在是占位内容，把中间的 `<div className="card">…` 换成你的实现即可，**不用改 `App.tsx`**。
+面板与日历已有完整实现，后续修改请基于现有组件扩展。
 
 ## 交付清单
 

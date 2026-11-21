@@ -118,7 +118,7 @@ API 细节见 `src/features/reader/README.md`。
 | 模块 | 目录 | 交付内容 | 难度 | 负责人 | 状态 |
 |---|---|---|---|---|---|
 | **B 查词与生词本** | `src/features/vocab/` | 搜索、按文章/盒子筛选、标签、批量删除、导出 CSV、**整句翻译** | 中 | Selena14111 | 🚧 待开工 |
-| **C 复习队列与日历** | `src/features/review/` | 复习卡片、三档评分、日历热力图、记忆曲线、每日目标 | 中 | jz-Gong10 | 🚧 入口已接好 |
+| **C 复习队列与日历** | `src/features/review/` | 复习卡片、三档评分、日历热力图、记忆曲线、每日目标 | 中 | jz-Gong10 | 🟡 复习/日历/目标已实现，记忆曲线待补 |
 | **D 长句解析** | `src/features/parse/` | 规则层**已完成**（`lib/clause.ts` + 8 单测）；接手做：正文内联标注、接触/并列从句、缓存、可选 LLM 增强 | **难** | zouyujing20070207 | 🟡 规则层已交付 |
 | **E 朗读与跟读** | `src/features/tts/` | 逐句朗读、当前句高亮跟随、自动滚动、语速音色、暂停继续、**阅读时长统计** | 简单 | double-s846 | 🚧 待开工 |
 
@@ -132,9 +132,9 @@ API 细节见 `src/features/reader/README.md`。
 在 `VocabDrawer.tsx` 顶部加搜索框与"按文章筛选"下拉。第一个提交写
 `feat(vocab): 生词本支持搜索与按文章筛选`。
 
-**模块 C（宫霁祯）**：入口已经接好（顶栏「复习」按钮 → `ReviewPanel.tsx` 占位）。
-读 `src/features/review/README.md` → 把占位卡片换成真正的复习卡片 + 三档评分。
-算法全部在 `lib/srs.ts`（已有 9 个单测），**你只写界面**。
+**模块 C（宫霁祯）**：`ReviewPanel.tsx` 与 `CalendarHeatmap.tsx` 已实现复习卡片、三档评分、
+月历筛选和新增生词目标，并已适配当前阅读器插槽。后续可基于 `VocabEntry.reviews` 补记忆曲线；
+复习和日期算法继续复用 `lib/srs.ts`。
 
 **模块 D（zouyujing）**：规则层已完成，先读 `src/features/parse/README.md` 与
 `docs/ARCHITECTURE.md` 第 6 节 → 然后从**正文内联标注 `ClauseMarks.tsx`** 开始

@@ -94,7 +94,7 @@ npm test           # 单元测试（node:test，覆盖切句/切词/词形还原
 | 2 | **阅读流畅性与学习深度**双模式 | ✅ | `types.ts` 的 `ReadingMode`、顶栏切换 |
 | 3 | **点击查词**：内置离线词表 + 在线词典三级降级 | ✅ | `lib/dict.ts`、`features/vocab/WordPopover.tsx` |
 | 4 | **生词本与生词卡**：记录原句与出处 | ✅ | `lib/storage.ts`、`features/vocab/VocabDrawer.tsx` |
-| 5 | **生词卡日历 + 复习到期提醒** | 🚧 | `lib/srs.ts` 已就绪，UI 由模块 C 实现 |
+| 5 | **生词卡日历 + 复习到期提醒** | ✅ | `features/review` 复习评分、日历热力图与每日目标，复用 `lib/srs.ts` |
 | 6 | **阅读进度与打勾标记**：段落级已读、文章百分比 | ✅ | `features/reader/Reader.tsx`、侧栏进度条 |
 | 7 | **长句解析**：切分句子成分并给出中文讲解 | ✅ | `lib/clause.ts`（离线规则层）、`features/parse` |
 | 8 | **TTS 朗读**：逐句朗读 + 当前句高亮 | 📋 | 模块 E，使用浏览器原生 `SpeechSynthesis` |
@@ -280,7 +280,7 @@ PR 记录即分工证据，同时承载 AI 使用说明（见 [PR 模板](.githu
 - [x] 查词三级降级、生词卡基础版
 - [x] 单元测试（`npm test`，28 个用例覆盖 tokenize / srs / clause）
 - [x] **长句解析规则层**（模块 D）：从句切分 + 主干抽取 + 成分中文讲解，离线可用
-- [ ] 复习队列 + 日历热力图（模块 C）
+- [x] 复习队列 + 日历热力图（模块 C）
 - [ ] TTS 逐句朗读与高亮跟读（模块 E）
 - [ ] 长句解析的 LLM 增强（可选，需自备 key，失败自动回落规则层）
 - [ ] storage / dict 的测试（需先补 localStorage 与 fetch 的打桩）

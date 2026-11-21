@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | double-s846（负责人） | [@double-s846](https://github.com/double-s846) | `dev/double-s846` | 16 | **地基与架构**：工程脚手架、数据契约、存储层、文本处理、查词降级、SRS 算法、阅读器与装饰层插槽、双模式、导入、设置与备份、**长句解析规则层**、单元测试、全部文档、集成（含跨分支冲突解决）与演示；**模块 E 朗读跟读** |
 | Selena | [@Selena14111](https://github.com/Selena14111) | `dev/Selena14111-b` | 0 | **模块 B** 生词本搜索、按文章/盒子筛选、标签、批量删除、CSV 导出 |
-| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-c` | 3 | **模块 C** 复习队列与日历（复习卡片、三档评分、热力图、记忆曲线、每日目标）＋ **PDF 论文图文导入** ＋ 中文查词自动翻译降级 |
+| 宫霁祯 | [@jz-Gong10](https://github.com/jz-Gong10) | `dev/jz-Gong10-c` | 见 §4 Git 记录 | **模块 C** 复习卡片、三档评分、热力图与每日目标 ＋ **PDF 论文图文导入** ＋ 中文查词自动翻译降级；记忆曲线待补 |
 | zouyujing | [@zouyujing20070207](https://github.com/zouyujing20070207) | `dev/zouyujing20070207-d` | 0 | **模块 D** 长句解析增强：正文内联标注、接触/并列从句识别、解析缓存、可选 LLM 增强、补测试 |
 
 > 说明：
@@ -84,7 +84,7 @@ D 的规则层由负责人先行完成（避免卡住基础功能点），接手
 | `src/types.ts`、`src/lib/**`、`src/data/**` | double-s846（**公共层，改动需全组同意**） |
 | `src/features/reader/**`、`library/**`、`settings/**` | double-s846 |
 | `src/features/vocab/**` | double-s846 搭基线 → **模块 B 扩展** |
-| `src/features/review/**` | **模块 C**（当前仅 README 与算法依赖） |
+| `src/features/review/**` | **模块 C**：jz-Gong10 实现复习面板与日历热力图 |
 | `src/features/parse/**` | double-s846 搭契约与面板 → **模块 D 实现解析** |
 | `src/features/tts/**` | **模块 E**（当前仅 README） |
 | `tests/**`、`docs/**`、`README.md` | double-s846 起草 → 各成员补充自己模块的部分 |
