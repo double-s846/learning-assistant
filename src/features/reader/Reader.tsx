@@ -16,7 +16,7 @@ import type { Article, Paragraph, ReadingMode, Settings, VocabEntry } from '@/ty
 import { getSentencesByParagraph } from '@/lib/article'
 import { tokenizeWords } from '@/lib/tokenize'
 import type { WordSelection } from '@/features/vocab/WordPopover'
-import { PdfDocumentProvider, PdfPageFigure } from './PdfPageFigure'
+import { PdfDocumentProvider, PdfFigure, PdfPageFigures } from './PdfPageFigure'
 
 interface Props {
   article: Article
@@ -81,6 +81,10 @@ export function Reader({
           <section key={group.page} className="read__page" aria-label={group.page ? `PDF 第 ${group.page} 页` : undefined}>
           {group.page > 0 && <h2 className="read__page-label">PDF 第 {group.page} 页</h2>}
           {group.paragraphs.map((paragraph) => {
+          if (paragraph.pdfFigure) {
+            const figure = article.pdf?.figures?.find((item) => item.index === paragraph.pdfFigure)
+            return figure ? <PdfFigure key={paragraph.id} figure={figure} /> : null
+          }
           const sentences = byParagraph.get(paragraph.id) ?? []
           const isRead = readParagraphIds.includes(paragraph.id)
 
@@ -147,7 +151,7 @@ export function Reader({
             </p>
           )
           })}
-          {group.page > 0 && <PdfPageFigure pageNumber={group.page} />}
+          {group.page > 0 && !article.pdf?.figures && <PdfPageFigures pageNumber={group.page} />}
           </section>
         ))}
       </div>

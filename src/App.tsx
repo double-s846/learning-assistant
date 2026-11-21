@@ -67,7 +67,7 @@ export default function App() {
       ? current.readParagraphIds.filter((id) => id !== paragraphId)
       : [...current.readParagraphIds, paragraphId]
 
-    const total = article.paragraphs.length
+    const total = article.paragraphs.filter((paragraph) => !paragraph.pdfFigure).length
     const percent = Math.round((readParagraphIds.length / Math.max(1, total)) * 100)
 
     progressStore.upsert({

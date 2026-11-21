@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from 'pdfjs-dist'
 import { pdfFileStore } from '@/lib/storage'
+import type { PdfFigure as PdfFigureData } from '@/types'
 
 const PdfContext = createContext<{ document: PDFDocumentProxy | null; error: string }>({ document: null, error: '' })
 
@@ -38,7 +39,7 @@ export function PdfDocumentProvider({ fileId, children }: { fileId?: string; chi
   return <PdfContext.Provider value={{ document, error }}>{children}</PdfContext.Provider>
 }
 
-function PdfPageCanvas({ pageNumber, active, large = false }: { pageNumber: number; active: boolean; large?: boolean }) {
+function PdfFigureCanvas({ figure, active, large = false }: { figure: PdfFigureData; active: boolean; large?: boolean }) {
   const { document, error } = useContext(PdfContext)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [renderError, setRenderError] = useState('')
@@ -52,16 +53,19 @@ function PdfPageCanvas({ pageNumber, active, large = false }: { pageNumber: numb
     const canvas = canvasRef.current!
     async function render() {
       try {
-        const page = await document!.getPage(pageNumber)
+        const page = await document!.getPage(figure.pageNumber)
         if (cancelled) return
         const natural = page.getViewport({ scale: 1 })
         const limit = large ? 2400 : 1200
-        const scale = Math.min(large ? 3 : 2, limit / natural.width, limit * 1.5 / natural.height)
+        const width = natural.width * (figure.rect[2] - figure.rect[0])
+        const height = natural.height * (figure.rect[3] - figure.rect[1])
+        const scale = Math.min(large ? 4 : 3, limit / width, limit * 1.5 / height)
         const viewport = page.getViewport({ scale })
-        setRatio(viewport.width / viewport.height)
-        canvas.width = Math.ceil(viewport.width)
-        canvas.height = Math.ceil(viewport.height)
-        renderTask = page.render({ canvas, viewport })
+        setRatio(width / height)
+        canvas.width = Math.ceil(width * scale)
+        canvas.height = Math.ceil(height * scale)
+        renderTask = page.render({ canvas, viewport, transform: [1, 0, 0, 1,
+          -figure.rect[0] * viewport.width, -figure.rect[1] * viewport.height] })
         await renderTask.promise
         if (!cancelled) {
           setReady(true)
@@ -78,21 +82,21 @@ function PdfPageCanvas({ pageNumber, active, large = false }: { pageNumber: numb
       canvas.width = 0
       canvas.height = 0
     }
-  }, [document, pageNumber, active, large])
+  }, [document, figure, active, large])
 
   const failure = error || renderError
   return (
     <div className={`pdf-page__surface${large ? ' pdf-page__surface--large' : ''}`} style={{ aspectRatio: ratio }}>
-      <canvas ref={canvasRef} role="img" aria-label={`PDF 第 ${pageNumber} 页原版图文`}
+      <canvas ref={canvasRef} role="img" aria-label={`${figure.label}（PDF 第 ${figure.pageNumber} 页）`}
         style={{ visibility: active && ready && !failure ? 'visible' : 'hidden' }} />
       {failure ? <span className="pdf-page__message" role="status">{failure}</span> : (
-        (!active || !ready) && <span className="pdf-page__message">{active ? '正在加载原页图文…' : `PDF 第 ${pageNumber} 页`}</span>
+        (!active || !ready) && <span className="pdf-page__message">{active ? '正在加载图片…' : figure.label}</span>
       )}
     </div>
   )
 }
 
-export function PdfPageFigure({ pageNumber }: { pageNumber: number }) {
+export function PdfFigure({ figure }: { figure: PdfFigureData }) {
   const figureRef = useRef<HTMLElement>(null)
   const [nearby, setNearby] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -127,24 +131,51 @@ export function PdfPageFigure({ pageNumber }: { pageNumber: number }) {
   return (
     <figure className="pdf-page" ref={figureRef}>
       <figcaption className="pdf-page__caption">
-        <span>PDF 第 {pageNumber} 页 · 原版图文</span>
-        <button ref={triggerRef} className="btn btn--ghost" onClick={() => setExpanded(true)} aria-label={`放大查看 PDF 第 ${pageNumber} 页`}>
+        <span>{figure.label} · PDF 第 {figure.pageNumber} 页</span>
+        <button ref={triggerRef} className="btn btn--ghost" onClick={() => setExpanded(true)} aria-label={`放大查看 ${figure.label}（第 ${figure.pageNumber} 页）`}>
           放大查看
         </button>
       </figcaption>
-      <PdfPageCanvas pageNumber={pageNumber} active={nearby} />
+      <PdfFigureCanvas figure={figure} active={nearby} />
       {expanded && (
         <div className="pdf-lightbox" onClick={() => { setExpanded(false); triggerRef.current?.focus() }}>
-          <section className="pdf-lightbox__dialog" role="dialog" aria-modal="true" aria-label={`PDF 第 ${pageNumber} 页大图`}
+          <section className="pdf-lightbox__dialog" role="dialog" aria-modal="true" aria-label={`${figure.label} 大图`}
             onClick={(event) => event.stopPropagation()}>
             <div className="pdf-lightbox__head">
-              <strong>PDF 第 {pageNumber} 页 · 可滚动查看大图</strong>
+              <strong>{figure.label} · PDF 第 {figure.pageNumber} 页</strong>
               <button ref={closeRef} className="btn" onClick={() => { setExpanded(false); triggerRef.current?.focus() }}>关闭大图</button>
             </div>
-            <div className="pdf-lightbox__body"><PdfPageCanvas pageNumber={pageNumber} active large /></div>
+            <div className="pdf-lightbox__body"><PdfFigureCanvas figure={figure} active large /></div>
           </section>
         </div>
       )}
     </figure>
   )
+}
+
+/** Previously imported PDFs still have the source file: show isolated graphics,
+ * never fall back to a full-page screenshot. Reimporting adds precise anchors. */
+export function PdfPageFigures({ pageNumber }: { pageNumber: number }) {
+  const { document, error: documentError } = useContext(PdfContext)
+  const [figures, setFigures] = useState<PdfFigureData[]>([])
+  const [error, setError] = useState('')
+  useEffect(() => {
+    if (!document) return
+    let cancelled = false
+    async function load() {
+      try {
+        const { extractPageFigures } = await import('../library/pdf')
+        const page = await document!.getPage(pageNumber)
+        const result = await extractPageFigures(page)
+        if (!cancelled) setFigures(result)
+      } catch {
+        if (!cancelled) setError('这页的图片识别失败，正文仍可阅读。重新导入 PDF 可重试。')
+      }
+    }
+    void load()
+    return () => { cancelled = true }
+  }, [document, pageNumber])
+  return <>{figures.map((figure) => <PdfFigure key={figure.index} figure={figure} />)}
+    {pageNumber === 1 && documentError && <p className="hint">{documentError}</p>}
+    {error && <p className="hint">{error}</p>}</>
 }

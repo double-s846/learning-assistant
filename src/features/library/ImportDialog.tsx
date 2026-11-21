@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ArticleInput } from '@/lib/article'
 import { createId } from '@/lib/id'
+import type { PdfFigure } from '@/types'
 
 interface Props {
   open: boolean
@@ -42,6 +43,7 @@ function ImportForm({ onClose, onSubmit }: Omit<Props, 'open'>) {
   const [pdfSummary, setPdfSummary] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [pdfPageCount, setPdfPageCount] = useState(0)
+  const [pdfFigures, setPdfFigures] = useState<PdfFigure[]>([])
   const [keepPdfPages, setKeepPdfPages] = useState(true)
   const [saving, setSaving] = useState(false)
   const extractionRef = useRef<AbortController | null>(null)
@@ -54,7 +56,7 @@ function ImportForm({ onClose, onSubmit }: Omit<Props, 'open'>) {
 
   async function handleSubmit() {
     if (extracting || saving) return
-    if (form.text.replace(/^【PDF 第 \d+ 页】\s*$/gm, '').trim().length < 20 && !(pdfFile && keepPdfPages)) {
+    if (form.text.replace(/^【PDF (?:第 \d+ 页|图片 \d+)】\s*$/gm, '').trim().length < 20 && !(pdfFile && keepPdfPages)) {
       setError('正文太少，至少需要 20 个字符。请粘贴正文或从 PDF 提取文字。')
       return
     }
@@ -77,8 +79,9 @@ function ImportForm({ onClose, onSubmit }: Omit<Props, 'open'>) {
         author: form.author,
         license: form.license,
         pdfPageCount: pdfPageCount || undefined,
+        pdfFigures,
         ...(pdfFile && keepPdfPages ? {
-          pdf: { fileId: createId('pdf'), pageCount: pdfPageCount },
+          pdf: { fileId: createId('pdf'), pageCount: pdfPageCount, figures: pdfFigures },
           pdfFile,
         } : {}),
       })
@@ -114,6 +117,7 @@ function ImportForm({ onClose, onSubmit }: Omit<Props, 'open'>) {
       if (controller.signal.aborted) return
       setPdfFile(file)
       setPdfPageCount(result.pageCount)
+      setPdfFigures(result.figures)
       setForm((previous) => ({
         ...previous,
         title: previous.title.trim() || result.title,
@@ -122,9 +126,9 @@ function ImportForm({ onClose, onSubmit }: Omit<Props, 'open'>) {
         text: result.text,
       }))
       const skipped = result.emptyPages.length
-        ? `其中 ${result.emptyPages.length} 页没有可提取文字，保留原页后仍可查看图片，点词需先做 OCR。`
+        ? `其中 ${result.emptyPages.length} 页没有可提取文字，图片中的字需先做 OCR 才能点词。`
         : ''
-      setPdfSummary(`已提取「${file.name}」，共 ${result.pageCount} 页。${skipped}请检查下方正文，保留页码标记即可将原页图文放在对应文字之后。`)
+      setPdfSummary(`已提取「${file.name}」，共 ${result.pageCount} 页，识别到 ${result.figures.length} 个图片/图表区域。${skipped}正文使用阅读器字体显示；保留图片标记可将图片放在对应位置。`)
     } catch (cause) {
       if (controller.signal.aborted) return
       setError(cause instanceof Error ? cause.message : 'PDF 提取失败，请重新选择文件或粘贴正文。')
@@ -178,13 +182,13 @@ function ImportForm({ onClose, onSubmit }: Omit<Props, 'open'>) {
                 />
                 <span className="hint" id="imp-pdf-help">
                   在本机处理，PDF 不会上传。支持 30 MB、300 页以内的 PDF。
-                  保留原页可查看图片、矢量图表与公式；扫描件也可查看，点词需先做 OCR。
+                  正文使用阅读器排版，照片和可识别的矢量图表单独显示；扫描件点词需先做 OCR。
                 </span>
               </div>
               <label className="import-pdf__option">
                 <input type="checkbox" checked={keepPdfPages} disabled={extracting || saving}
                   onChange={(event) => setKeepPdfPages(event.target.checked)} />
-                保留原页图文（含图片、图表与公式，可放大）
+                提取并保留图片/图表（正文仍使用阅读器排版）
               </label>
               <div role="status" aria-live="polite">
                 {extracting && (

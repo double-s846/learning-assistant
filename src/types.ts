@@ -33,10 +33,12 @@ export interface Article {
   paragraphs: Paragraph[]
   /** 预估阅读时长（分钟），导入时计算一次 */
   readingMinutes: number
-  /** 原 PDF 存在本机 IndexedDB，按页保留图像、矢量图和公式。 */
+  /** 原 PDF 存在本机 IndexedDB，阅读时只渲染独立图片/图表区域。 */
   pdf?: {
     fileId: string
     pageCount: number
+    /** 独立的照片/图表区域，坐标相对于旋转后页面归一化。 */
+    figures?: PdfFigure[]
   }
 }
 
@@ -47,6 +49,16 @@ export interface Paragraph {
   text: string
   /** 可选的 PDF 来源页码；旧文章没有该字段。 */
   pdfPage?: number
+  /** 图片占位段落不参与切句或阅读进度计数。 */
+  pdfFigure?: number
+}
+
+export interface PdfFigure {
+  index: number
+  pageNumber: number
+  /** [left, top, right, bottom], each within 0..1. */
+  rect: [number, number, number, number]
+  label: string
 }
 
 /** 句子。由 `lib/tokenize.ts` 在导入时切好并缓存，避免每次渲染重算 */

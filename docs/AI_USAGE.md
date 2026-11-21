@@ -56,6 +56,7 @@
 |---|---|---|---|---|---|
 | 11-20 | 本地开发（成员待填） | OpenAI Codex | “支持导入 PDF 论文，提取后进入已有阅读和查词流程” | `features/library/ImportDialog.tsx`、`pdf.ts`、`pdf-text.ts`、`App.tsx`、导入样式、依赖与相关测试/文档 | 尚待负责人复核；本次实现、排版整理与自动检查由 Codex 完成，未将其记为人工修改。PDF 本身在浏览器本地处理，不发送给 AI 或第三方服务。 |
 | 11-20 | 本地开发（成员待填） | OpenAI Codex | “尽量保留 PDF 中的图片” | `features/reader/PdfPageFigure.tsx`、`Reader.tsx`、`library/pdf-pages.ts`、`pdf.ts`、`ImportDialog.tsx`、`lib/storage.ts`、`lib/article.ts`、`types.ts`、备份设置与测试 | 尚待负责人复核；采用原页渲染兼容照片和矢量图表，PDF 存于本机 IndexedDB，随 JSON 备份导出/恢复。自动测试由 Codex 执行，不冒称人工复核。 |
+| 11-21 | 本地开发（成员待填） | OpenAI Codex | “正文继续使用阅读器文字显示，图片单独提取” | `library/pdf-figures.ts`、`pdf-pages.ts`、`pdf-text.ts`、`pdf.ts`、`reader/PdfPageFigure.tsx`、`Reader.tsx`、`lib/article.ts`、`types.ts`、图片区域测试与文档 | 尚待负责人复核；基于 PDF 绘图操作定位照片/矢量图表，尊重 Form 剪裁边界；以图片标记插入正文，仅渲染图像区域。保留本地文件和备份流程，旧版图文文章自动识别区域。实现与自动测试由 Codex 完成。 |
 
 ### 关于上表的两点说明
 

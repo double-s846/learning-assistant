@@ -26,6 +26,13 @@ function paragraphs(lines: Line[]): string {
   let current = ''
   let previous: Line | undefined
   for (const line of lines) {
+    if (/^【PDF 图片 \d+】$/.test(line.text)) {
+      if (current) blocks.push(current)
+      blocks.push(line.text)
+      current = ''
+      previous = undefined
+      continue
+    }
     const gap = previous ? previous.y - line.y : 0
     const newParagraph = previous && (
       gap > Math.max(18, previous.height * 1.8) ||

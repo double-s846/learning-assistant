@@ -1,7 +1,10 @@
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
+import { getDocument, GlobalWorkerOptions, OPS } from 'pdfjs-dist'
+import type { PDFPageProxy } from 'pdfjs-dist'
+import type { PdfFigure } from '@/types'
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import { pdfPageToText } from './pdf-text'
-import { pdfPageMarker } from './pdf-pages'
+import { pdfPageMarker, pdfFigureMarker } from './pdf-pages'
+import { findPdfFigures, textInsideFigure } from './pdf-figures'
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
@@ -72,6 +75,13 @@ export interface PdfImportResult {
   author: string
   pageCount: number
   emptyPages: number[]
+  figures: PdfFigure[]
+}
+
+export async function extractPageFigures(page: PDFPageProxy): Promise<PdfFigure[]> {
+  const content = await page.getTextContent()
+  return findPdfFigures(await page.getOperatorList(), OPS, page.getViewport({ scale: 1 }),
+    content.items.filter((item) => 'str' in item), page.pageNumber)
 }
 
 function metadataString(info: unknown, key: string): string {
@@ -106,17 +116,29 @@ export async function extractPdf(file: File, { signal, onProgress }: PdfImportOp
     const { info } = await pdf.getMetadata()
     const blocks: string[] = []
     const emptyPages: number[] = []
+    const figures: PdfFigure[] = []
     let textLength = 0
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       signal.throwIfAborted()
       const page = await pdf.getPage(pageNumber)
       const content = await page.getTextContent()
+      const viewport = page.getViewport({ scale: 1 })
+      const items = content.items.filter((item) => 'str' in item)
+      const pageFigures = findPdfFigures(await page.getOperatorList(), OPS, viewport, items, pageNumber)
+        .map((figure, index) => ({ ...figure, index: figures.length + index + 1 }))
+      figures.push(...pageFigures)
+      const bodyItems = items.filter((item) => !pageFigures.some((figure) => textInsideFigure(item, figure, viewport)))
+      const figureItems = pageFigures.map((figure) => {
+        const [x, y] = viewport.convertToPdfPoint(figure.rect[0] * viewport.width, figure.rect[1] * viewport.height)
+        return { str: pdfFigureMarker(figure.index), width: (figure.rect[2] - figure.rect[0]) * viewport.width,
+          height: 10, transform: [1, 0, 0, 10, x, y] }
+      })
       const text = pdfPageToText(
-        content.items.filter((item) => 'str' in item),
+        [...bodyItems, ...figureItems],
         page.view[2] - page.view[0],
       )
       blocks.push(`${pdfPageMarker(pageNumber)}\n\n${text}`)
-      if (!text.trim()) emptyPages.push(pageNumber)
+      if (!items.some((item) => item.str.trim())) emptyPages.push(pageNumber)
       textLength += text.length
       if (textLength > MAX_TEXT_LENGTH) throw new Error('PDF 提取的正文超过 100 万字符，请拆分后再导入。')
       page.cleanup()
@@ -128,6 +150,7 @@ export async function extractPdf(file: File, { signal, onProgress }: PdfImportOp
       author: metadataString(info, 'Author'),
       pageCount: pdf.numPages,
       emptyPages,
+      figures,
     }
   } catch (error) {
     signal.throwIfAborted()
