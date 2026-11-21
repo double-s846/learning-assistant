@@ -167,16 +167,29 @@ analyzeSentence(text, { sentenceId })
 | 有道/百度接口未真正实现 | 二者都需要签名，签名密钥**不能放在前端**（`VITE_` 变量会被打进 bundle 公开）。要支持必须在赛题范围外引入服务端代理 | 保留 `fromPaidApi()` 钩子与 `.env.example` 声明 |
 | URL 自动抓取未实现 | 跨域限制 + 外刊付费墙 | 赛后可选：自建代理或浏览器插件 |
 | 查词按**单词**粒度，不是划词短语 | 短语查询需要分词/短语词典，超出范围 | 可在模块 B 扩展"选中短语 → 整句翻译" |
-| 无自动化测试 | 时间优先给功能闭环 | 路线图已列：`node:test` 覆盖 tokenize / srs / storage |
+| 无自动化测试 | ~~已解决~~ | 现有 44 例，见 §9 |
 | TTS 音色跨设备不通用 | 音色列表由浏览器/系统提供 | 只存 `ttsVoice` 名称，取不到时回落到默认音色 |
+| **分层倒挂**：`lib/article.ts` 依赖 `features/library/pdf-pages` | PDF 导入由模块 C 引入，切片工具放在了 feature 目录，`lib` 反过来 import 了它 | 应把 `pdf-pages.ts` 下沉到 `lib/`；时间成本 > 收益，暂记为技术债 |
+| **备份接口改为异步**：`exportSnapshot` / `importSnapshot` / `clearAll` 返回 Promise | PDF 原文件存在 IndexedDB，导出/导入要读写 Blob，无法同步完成 | 所有调用方必须 `await`，新增调用点时注意 |
+| `SCHEMA_VERSION` 由 1 升到 2 | 新增可选字段 `pdf` / `pdfFigure`；旧 v1 备份无需迁移（字段可选） | 导入旧备份仍兼容 |
+| PDF 导入依赖 `pdfjs-dist`（Apache-2.0，按需动态加载） | 运行时依赖从 2 个变成 3 个，主 bundle 不变 | 许可证登记见 `THIRD_PARTY_LICENSES.md`；若评审质疑体积，说明是懒加载 |
 
 ---
 
 ## 9. 测试策略
 
-已落地：`tests/tokenize.test.mjs`（11 例）、`tests/srs.test.mjs`（9 例）、`tests/clause.test.mjs`（8 例），
-共 **28 个用例**，运行方式 `npm test`（Node 内置 `node:test` + 原生 TypeScript 类型擦除，
-**不引入任何测试框架**）。
+已落地 **44 个用例**，运行方式 `npm test`（Node 内置 `node:test` + 原生 TypeScript 类型擦除，
+**不引入任何测试框架**）：
+
+| 测试文件 | 用例数 | 覆盖 |
+|---|---|---|
+| `tests/tokenize.test.mjs` | 12 | 切段 / 切句 / 切词 / 词形还原 |
+| `tests/srs.test.mjs` | 9 | 间隔重复、日历聚合、本地时区 |
+| `tests/clause.test.mjs` | 8 | 长句解析：从句切分、主干抽取、区间一致 |
+| `tests/pdf-text.test.mjs` | 5 | PDF 双栏顺序、断行修复、中文换行 |
+| `tests/pdf-figures.test.mjs` | 6 | PDF 图片区域识别、剪裁边界、整页扫描件去重 |
+| `tests/pdf-pages.test.mjs` | 2 | 页码 / 图片标记切分 |
+| `tests/translate.test.mjs` | 2 | 翻译降级（失败返回 null） |
 
 选这些用例的原则：**只测"错了也很难在界面上看出来"的纯函数。**
 
