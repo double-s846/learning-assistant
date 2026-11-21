@@ -47,6 +47,9 @@
 | 11-17 | double-s846 | DeepSeek Harness | "起草 README、团队分工手册、产品说明、架构文档" | `README.md`、`docs/TEAM.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、本文件 | 人工填入真实约束：截止日期 12/06、评审权重 30/25/20/15/10、真实 Git 状态（仓库初始为空）、以及"沙箱内 git push 需本地执行"这一环境事实；删掉 AI 编造的"已完成的单元测试"段落 |
 | 11-17 | double-s846 | DeepSeek Harness | "写 3 篇示例文章与离线核心词表" | `src/data/sample-articles.ts`、`src/data/glossary/core.json` | 人工确认授权：2 篇团队原创标 CC BY 4.0，1 篇 Aesop 标 Public Domain；人工检查词表释义（AI 初稿把 `peculiar` 只译"奇怪的"，补上"特有的"义项，因为文中是后者） |
 | 11-17 | double-s846 | DeepSeek Harness | "给切句/切词/词形还原和间隔重复写单元测试" | `tests/tokenize.test.mjs`、`tests/srs.test.mjs` | ① 人工补充 AI 初稿没覆盖的边界：`a.m.` 缩写、`boxes`/`running` 的还原、`cities` 的候选污染、东八区凌晨 00:30 的 `dayKey`、盒 5 用 `easy` 不得越界；② 发现 `node --test tests/` 在某些受限环境会 `spawn EPERM`，人工加注说明可用 `node tests/xxx.test.mjs` 直接跑单文件；③ 测试跑出的 `cities → citie` 多余候选，回头修了 `tokenize.ts` 的生产代码 |
+| 11-17 | double-s846 | DeepSeek Harness | "把阅读器改成装饰层插槽，避免三个模块同时改 Reader.tsx" | `src/features/reader/Reader.tsx`、`src/types.ts`、`src/App.tsx`、`src/features/vocab/WordPopover.tsx`、`src/features/reader/README.md` | ① 人工判断插槽**只给 class 名和 ReactNode、不给 DOM 操作权**（否则模块之间仍会互相踩）；② 人工把 `WordSelection` 拆成 `WordHit`（进 `types.ts`）+ 坐标，去掉 `Reader → features/vocab` 的反向依赖 —— AI 初稿让 Reader import 了 `WordSelection`，属于分层错误；③ 人工把配色/交互约定写进 `reader/README.md` 的 CSS 钩子表，避免各模块自己发明 class 名；④ 人工补 `cx()` 避免出现 `class="w undefined"` |
+| 11-17 | double-s846 | DeepSeek Harness | "把成员、时间红线、进阶功能取舍写进 TEAM/CONTRIBUTION" | `docs/TEAM.md`、`docs/CONTRIBUTION.md`、`docs/PRODUCT.md`、`README.md` | 人工填入真实的四个 GitHub 账号与待认领状态；人工把"三条红线"从一句话扩成带处置措施的表格（11/23 降级、11/26 停止加功能、11/29 冻结）；人工按评分结构（闭环 30 + 文档 25 > 创新 15）决定进阶功能一律排除"需要 key / 需要后端"的项 |
+| 11-17 | double-s846 | DeepSeek Harness | "写离线长句解析规则：切从句、抽主干、给中文讲解" | `src/lib/clause.ts`、`src/features/parse/ParsePanel.tsx`、`src/types.ts`、`tests/clause.test.mjs` | ① AI 初稿把介词短语也从主干里挖掉，产出 `the trees were not distributed neighbourhood` 这种读不通的主干，人工改为**只挖从句**；② 初稿的助动词断句把 `which had been laid out` 截成 `which had`，人工加"助动词链不重复断"；③ 挖除区间后留下 `Older streets, happened…`，人工加"连带吞掉两侧逗号"；④ 去掉 `even` 被误当连词（`even more difficult` 不是从句）；⑤ 人工把成分类型拆成 `kind: 'clause' \| 'modifier'`，一个字段同时决定"是否进主干"和"界面配色"；⑥ 人工规定**解析不出来就显示「未能切分」**，不许把整句当主干假装成功；⑦ 测试跑出 `When` 从句漏检（句首被跳过），人工补"句首 when/where/why 按状语从句处理" |
 
 <!-- 追加格式：
 | MM-DD | 姓名 | 工具 | 用途 / 提示词摘要 | 产出文件 | 人工做的实质性修改 |
@@ -111,7 +114,14 @@
 为保证可复核，关键提示词摘要已记录在 §3 的"用途 / 提示词摘要"列。
 完整的对话记录（含报错排查过程）由成员自行留存截图，作为提交材料附件。
 
-## 7. 待补充（团队分工后必做）
+## 7. 2026-11-21 合并适配（Codex）
+
+根据用户“把我的分支合并到 main”指令，将 `origin/main` 的阅读器装饰插槽和离线长句解析合入
+`dev/jz-Gong10-c`。Codex 解决 `Reader.tsx` 与 README 冲突，保留 `WordHit`、
+`ReaderDecorations`、句子编号和学习/流畅模式约束，同时保留复习日历、中文查词与 PDF 独立图片。
+同步更新测试数量与模块 C 状态。冲突处理和自动验证由 Codex 完成，未记为人工修改；成员复核状态待填。
+
+## 8. 待补充（团队分工后必做）
 
 - [ ] 每位成员在使用 AI 后**当次**追加一行记录（不要攒到最后一周，写不出来）；
 - [ ] 模块 B / C / D / E 的 AI 使用记录；
