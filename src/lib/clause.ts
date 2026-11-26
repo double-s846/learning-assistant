@@ -17,8 +17,8 @@
  *
  *  已知的取舍（写在这里，评审和组员都能看到）：
  *    · 没有词性标注器，靠"高频虚词表 + 词形后缀"猜；
- *    · 省略 that 的接触从句（the minutes they obtain）识别不出来；
- *    · 并列从句只标第一个，不展开。
+ *    · 接触从句仅识别限定名词 + 人称代词 + 常见及物动词的保守模式；
+ *    · 并列从句仅展开重复关系词的显式结构。
  * ============================================================================
  */
 
@@ -230,6 +230,19 @@ export function analyzeSentence(text: string, options: AnalyzeOptions = {}): Sen
       }
     }
 
+    // 保守识别接触从句：限定词 + 名词 + 主语代词 + 已知及物动词。
+    // 不把 I think they ... 或普通并列主句当成省略关系词。
+    const contact = !role && i >= 2 &&
+      new Set(['i', 'you', 'he', 'she', 'we', 'they']).has(word.lower) &&
+      DETERMINERS.has(words[i - 2].lower) &&
+      !PRONOUNS.has(prev.lower) && !AUXILIARIES.has(prev.lower) &&
+      !REPORTING_VERBS.has(prev.lower) &&
+      new Set(['obtain', 'obtained', 'read', 'bought', 'buy', 'wrote', 'write',
+        'use', 'used', 'met', 'meet', 'made', 'make', 'received', 'receive',
+        'need', 'needed', 'want', 'wanted', 'saw']).has(words[i + 1]?.lower)
+    if (contact && !hasPunctuationBetween(text, prev.end, word.start, ',;:.!?')) {
+      role = 'attributive-clause'
+    }
     if (!role) continue
 
     const end = findClauseEnd(text, words, i, role)
@@ -253,6 +266,8 @@ export function analyzeSentence(text: string, options: AnalyzeOptions = {}): Sen
       noteZh = `${markerLabel} 引导状语从句，${ROLE_NOTE.adverbial}`
     }
 
+    if (contact) noteZh = `疑似省略 that/which 的接触从句，限定「${prev.text}」；规则推测，请结合上下文核对`
+    if (overlaps(segments, span.start, span.end)) continue
     segments.push({
       start: span.start,
       end: span.end,
@@ -292,10 +307,14 @@ export function analyzeSentence(text: string, options: AnalyzeOptions = {}): Sen
 
   /* ---- 第 3 步：主干 = 去掉**从句**后剩下的部分（介词短语保留，否则主干读不通） ---- */
   segments.sort((a, b) => a.start - b.start)
-  const backbone = extractBackbone(
-    text,
-    segments.filter((s) => s.kind === 'clause'),
-  )
+  const clauses = segments.filter((s) => s.kind === 'clause')
+  // 删除两个并列从句之间的连接词，但保留连接主句的 and/but。
+  const removals = clauses.map((segment, index) => {
+    const previous = clauses[index - 1]
+    return previous && /^\s*,?\s*(and|but|or|nor|yet)\s+$/i.test(text.slice(previous.end, segment.start))
+      ? { ...segment, start: previous.end } : segment
+  })
+  const backbone = extractBackbone(text, removals)
 
   /* ---- 第 4 步：提示 ---- */
   const clauseCount = segments.filter((s) => s.kind === 'clause').length
@@ -339,6 +358,12 @@ function findClauseEnd(
     const word = words[i]
     const prev = words[i - 1]
     wordCount += 1
+
+    // 显式并列关系从句在连接词前截断，第二个关系词由主循环识别。
+    if (COORDINATORS.has(word.lower) && RELATIVE_PRONOUNS.has(words[i + 1]?.lower)) {
+      end = prev.end
+      break
+    }
 
     // 遇到下一个连词/关系词，本从句到此为止
     if (

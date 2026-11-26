@@ -10,7 +10,7 @@
 
 import { useMemo } from 'react'
 import type { ClauseSegment, SentenceParse } from '@/types'
-import { analyzeSentence } from '@/lib/clause'
+import { getSentenceParse } from './cache'
 
 interface Props {
   open: boolean
@@ -55,7 +55,7 @@ function buildPieces(text: string, segments: ClauseSegment[]) {
 export function ParsePanel({ open, sentenceId, sentence, onClose }: Props) {
   // 解析是纯函数且很便宜（几毫秒），用 useMemo 缓存即可，不需要异步与 loading
   const parse = useMemo<SentenceParse>(
-    () => analyzeSentence(sentence, { sentenceId }),
+    () => getSentenceParse(sentence, sentenceId),
     [sentence, sentenceId],
   )
 

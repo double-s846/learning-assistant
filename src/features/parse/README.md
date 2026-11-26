@@ -89,3 +89,8 @@ interface ClauseSegment {
 - 不要改 `Reader.tsx`（用 `decorations` 插槽）；
 - 不要在规则层失败时硬造结构 —— 宁可显示"未识别"；
 - 不要把 LLM 的 key 写进前端（`VITE_` 变量会被打包公开）。
+
+
+## D 增强交付（2026-11-26）
+
+新增 ClauseMarks、保守接触从句、显式并列关系从句和缓存。以上旧版“识别不出/只标第一个”描述现由有限模式支持替代，并非通用语法分析。正文组件待公共层负责人接入，步骤及限制见 [INTEGRATION.md](./INTEGRATION.md)。
