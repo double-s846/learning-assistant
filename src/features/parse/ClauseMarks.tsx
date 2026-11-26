@@ -20,7 +20,8 @@ export function ClauseMarks({ sentence }: { sentence: Sentence }) {
       offset = end
     }
     // Other overlays may introduce text; never mark uncertain offsets.
-    if (host.textContent !== sentence.text) return
+    const rendered = host.textContent ?? ''
+    if (rendered !== sentence.text && rendered !== sentence.text + ' ') return
     const registered: Array<{ highlight: Highlight; range: Range; name: string }> = []
     for (const segment of parse.segments) {
       const start = nodes.find(n => n.start <= segment.start && n.end > segment.start)
