@@ -8,9 +8,10 @@
  *   · 解析来源与局限如实标注（score 里"AI 使用透明化"的一部分）
  */
 
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import type { ClauseSegment, SentenceParse } from '@/types'
 import { getSentenceParse } from './cache'
+import { enhanceParse } from './llm'
 
 interface Props {
   open: boolean
@@ -54,11 +55,25 @@ function buildPieces(text: string, segments: ClauseSegment[]) {
 
 export function ParsePanel({ open, sentenceId, sentence, onClose }: Props) {
   // 解析是纯函数且很便宜（几毫秒），用 useMemo 缓存即可，不需要异步与 loading
-  const parse = useMemo<SentenceParse>(
+  const rule = useMemo<SentenceParse>(
     () => getSentenceParse(sentence, sentenceId),
     [sentence, sentenceId],
   )
 
+  const [enhanced, setEnhanced] = useState<SentenceParse | null>(null)
+  useEffect(() => {
+    if (!open) return
+    const controller = new AbortController()
+    void enhanceParse(sentence, sentenceId, {
+      baseUrl: import.meta.env.VITE_LLM_BASE_URL,
+      model: import.meta.env.VITE_LLM_MODEL,
+      apiKey: import.meta.env.VITE_LLM_API_KEY,
+    }, controller.signal).then(result => {
+      if (!controller.signal.aborted) setEnhanced(result)
+    })
+    return () => controller.abort()
+  }, [open, sentence, sentenceId])
+  const parse = enhanced?.text === sentence && enhanced.sentenceId === sentenceId ? enhanced : rule
   if (!open) return null
 
   const pieces = buildPieces(sentence, parse.segments)
@@ -112,11 +127,12 @@ export function ParsePanel({ open, sentenceId, sentence, onClose }: Props) {
             <p className="parse__backbone">{parse.backbone}</p>
             {degraded && (
               <p className="hint" style={{ margin: '4px 0 0', color: 'var(--danger)' }}>
-                规则层没能可靠切分这个句子，上面只是整句近似，**不是**真实主干。
+                规则层没能可靠切分这个句子，上面只是整句近似，并非已确认的语法主干。
               </p>
             )}
           </section>
 
+          {parse.translationZh && <section><h3 className="parse__h">中文参考</h3><p>{parse.translationZh}</p></section>}
           <section>
             <h3 className="parse__h">成分拆解</h3>
             {parse.segments.length === 0 && (
@@ -149,7 +165,7 @@ export function ParsePanel({ open, sentenceId, sentence, onClose }: Props) {
           )}
 
           <p className="hint" style={{ margin: 0 }}>
-            本解析由内置规则完成，不联网、不调用大模型；遇到省略 that 的接触从句可能识别不出，
+            {parse.source === 'llm' ? '成分位置由离线规则识别，中文讲解与翻译由大模型增强，请结合上下文核对。' : '本解析由离线规则完成；接触从句仅支持有限模式。'}
             此时宁可显示「未能切分」也不编造结构。规则说明见 docs/ARCHITECTURE.md。
           </p>
         </div>

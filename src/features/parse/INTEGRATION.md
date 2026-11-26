@@ -1,9 +1,9 @@
 # 模块 D 接入与验收
 
 实现：ClauseMarks 正文标注、保守接触从句、显式并列关系从句、200 条 LRU 内存缓存。
-未实现可选 LLM。未修改 App.tsx / Reader.tsx。
+已实现可选 LLM 中文讲解与翻译增强，结构始终沿用规则结果。已按用户要求接入 App.tsx，Reader.tsx 保持不变。
 
-## 由公共层负责人接入
+## 已完成的 App 接入
 
 在 App.tsx 导入：
 ```tsx
@@ -16,7 +16,7 @@ renderSentenceOverlay: (sentence) =>
 ```
 现有 useMemo 依赖已包含 settings.mode。
 
-正文用 CSS Custom Highlight API：从句紫色、修饰语绿色。浏览器不支持时保留面板分析，无正文标注；不复制文本、不拦截点击。其他 overlay 引入额外文本造成偏移不一致时主动跳过。尚未进行浏览器视觉验收。
+正文用 CSS Custom Highlight API：从句紫色、修饰语绿色。浏览器不支持时保留面板分析，无正文标注；不复制文本、不拦截点击。其他 overlay 引入额外文本造成偏移不一致时主动跳过。自动浏览器访问本地预览超时，尚未完成浏览器视觉验收。
 
 ## 检查
 

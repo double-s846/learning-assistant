@@ -16,6 +16,7 @@ import type { ReaderDecorations } from '@/features/reader/Reader'
 import { Sidebar } from '@/features/library/Sidebar'
 import { ImportDialog } from '@/features/library/ImportDialog'
 import { SettingsMenu } from '@/features/settings/SettingsMenu'
+import { ClauseMarks } from '@/features/parse/ClauseMarks'
 import { ParsePanel } from '@/features/parse/ParsePanel'
 import { ReviewPanel } from '@/features/review/ReviewPanel'
 import { SAMPLE_ARTICLES } from '@/data/sample-articles'
@@ -115,6 +116,7 @@ export default function App() {
     const focusedSentenceId = parseTarget?.sentenceId
 
     return {
+      renderSentenceOverlay: (sentence) => settings.mode === 'study' ? <ClauseMarks sentence={sentence} /> : null,
       wordClassName: (word) =>
         settings.mode === 'study' && savedLemmas.has(word.toLowerCase())
           ? 'w--saved'
