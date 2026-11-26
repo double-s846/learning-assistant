@@ -98,6 +98,11 @@ const DETERMINERS = new Set([
   'another', 'such', 'both', 'all', 'most', 'more',
 ])
 
+const CONTACT_SUBJECTS = new Set(['i', 'you', 'he', 'she', 'it', 'we', 'they'])
+const CONTACT_VERBS = new Set(['obtain', 'obtains', 'obtained', 'read', 'reads', 'bought', 'buy', 'buys',
+  'wrote', 'write', 'writes', 'use', 'uses', 'used', 'met', 'meet', 'meets', 'made', 'make', 'makes',
+  'received', 'receive', 'receives', 'need', 'needs', 'needed', 'want', 'wants', 'wanted', 'saw', 'seen'])
+
 /* ------------------------------------------------------------ 工具 */
 
 interface WordToken {
@@ -232,14 +237,12 @@ export function analyzeSentence(text: string, options: AnalyzeOptions = {}): Sen
 
     // 保守识别接触从句：限定词 + 名词 + 主语代词 + 已知及物动词。
     // 不把 I think they ... 或普通并列主句当成省略关系词。
-    const contact = !role && i >= 2 &&
-      new Set(['i', 'you', 'he', 'she', 'we', 'they']).has(word.lower) &&
+    const contact = !role && i >= 2 && CONTACT_SUBJECTS.has(word.lower) &&
       DETERMINERS.has(words[i - 2].lower) &&
       !PRONOUNS.has(prev.lower) && !AUXILIARIES.has(prev.lower) &&
       !REPORTING_VERBS.has(prev.lower) &&
-      new Set(['obtain', 'obtained', 'read', 'bought', 'buy', 'wrote', 'write',
-        'use', 'used', 'met', 'meet', 'made', 'make', 'received', 'receive',
-        'need', 'needed', 'want', 'wanted', 'saw']).has(words[i + 1]?.lower)
+      (CONTACT_VERBS.has(words[i + 1]?.lower) ||
+        (AUXILIARIES.has(words[i + 1]?.lower) && CONTACT_VERBS.has(words[i + 2]?.lower)))
     if (contact && !hasPunctuationBetween(text, prev.end, word.start, ',;:.!?')) {
       role = 'attributive-clause'
     }
@@ -382,7 +385,7 @@ function findClauseEnd(
     }
 
     // 逗号：从句已成形（≥3 词）时视为结束
-    if (wordCount >= 3 && hasPunctuationBetween(text, prev.end, word.start, ',')) {
+    if (wordCount >= 2 && hasPunctuationBetween(text, prev.end, word.start, ',')) {
       end = prev.end
       break
     }
@@ -394,7 +397,8 @@ function findClauseEnd(
       role === 'attributive-clause' &&
       wordCount >= 2 &&
       AUXILIARIES.has(word.lower) &&
-      !AUXILIARIES.has(prev.lower)
+      !AUXILIARIES.has(prev.lower) &&
+      !CONTACT_SUBJECTS.has(prev.lower)
     ) {
       end = prev.end
       break

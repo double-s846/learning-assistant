@@ -8,7 +8,7 @@
  *   · 解析来源与局限如实标注（score 里"AI 使用透明化"的一部分）
  */
 
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo, useEffect, useState, useRef } from 'react'
 import type { ClauseSegment, SentenceParse } from '@/types'
 import { getSentenceParse } from './cache'
 import { enhanceParse } from './llm'
@@ -54,7 +54,25 @@ function buildPieces(text: string, segments: ClauseSegment[]) {
 }
 
 export function ParsePanel({ open, sentenceId, sentence, onClose }: Props) {
-  // 解析是纯函数且很便宜（几毫秒），用 useMemo 缓存即可，不需要异步与 loading
+  const dialog = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialog.current?.focus()
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose() }
+      if (event.key === 'Tab') {
+        event.preventDefault()
+        dialog.current?.querySelector<HTMLButtonElement>('button')?.focus()
+      }
+    }
+    document.addEventListener('keydown', keydown)
+    return () => {
+      document.removeEventListener('keydown', keydown)
+      if (previous?.isConnected) previous.focus()
+    }
+  }, [open, onClose])
+  // 离线结果立即展示；可选增强异步完成后替换讲解。
   const rule = useMemo<SentenceParse>(
     () => getSentenceParse(sentence, sentenceId),
     [sentence, sentenceId],
@@ -83,7 +101,7 @@ export function ParsePanel({ open, sentenceId, sentence, onClose }: Props) {
   return (
     <>
       <div className="scrim" onClick={onClose} />
-      <div className="modal" role="dialog" aria-modal="true" aria-label="长句解析">
+      <div ref={dialog} tabIndex={-1} className="modal" role="dialog" aria-modal="true" aria-label="长句解析">
         <div className="modal__head">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <strong style={{ fontSize: 15 }}>长句解析</strong>

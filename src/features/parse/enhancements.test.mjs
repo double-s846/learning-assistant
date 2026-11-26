@@ -49,11 +49,56 @@ test('enhancement preserves original structure and adds explanation', async () =
 })
 test('failed, malformed and mismatched responses silently fall back', async () => {
   for (const request of [async () => { throw Error('offline') }, async () => new Response('', { status: 500 }), async () => new Response('{}'), async () => new Response(JSON.stringify({ choices: [{ message: { content: '{"translationZh":"x","notes":[]}' } }] }))]) {
-    assert.equal((await enhanceParse(sentence, 's', config, undefined, request)).source, 'rule')
+    assert.equal((await enhanceParse(sentence, 's', { ...config, model: 'failure' }, undefined, request)).source, 'rule')
   }
 })
 test('aborted requests do not return enhanced results', async () => {
   const controller = new AbortController()
   controller.abort()
   assert.equal((await enhanceParse(sentence, 's', config, controller.signal)).source, 'rule')
+})
+
+test('short contact clause ends at comma and auxiliary belongs to its subject', () => {
+  assert.equal(analyzeSentence('The minutes they obtain, which are valuable, matter.').segments[0].text, 'they obtain')
+  assert.equal(analyzeSentence('The book she has read is useful.').segments[0].text, 'she has read')
+  assert.equal(analyzeSentence('The book that she has read is useful.').segments[0].text, 'that she has read')
+})
+test('enhancement cache reuses success without sharing mutable objects', async () => {
+  let requests = 0
+  const request = async () => {
+    requests++
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ translationZh: '参考译文', notes: ['参考讲解'] }) } }] }))
+  }
+  const cfg = { ...config, model: 'cache-test' }
+  const a = await enhanceParse(sentence, 'first', cfg, undefined, request)
+  a.segments[0].noteZh = 'changed'
+  const b = await enhanceParse(sentence, 'second', cfg, undefined, request)
+  assert.equal(requests, 1)
+  assert.equal(b.sentenceId, 'second')
+  assert.equal(b.segments[0].noteZh, '参考讲解')
+})
+
+test('in-flight cancellation falls back and does not poison cache', async () => {
+  const controller = new AbortController()
+  const pending = enhanceParse(sentence, 'cancel', { ...config, model: 'cancel-active' }, controller.signal,
+    async (_url, init) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+    }))
+  controller.abort()
+  assert.equal((await pending).source, 'rule')
+})
+test('eight second timeout falls back without a user-facing error', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const pending = enhanceParse(sentence, 'timeout', { ...config, model: 'timeout' }, undefined,
+    async (_url, init) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => reject(new Error('timeout')), { once: true })
+    }))
+  t.mock.timers.tick(8000)
+  assert.equal((await pending).source, 'rule')
+})
+test('unrecognized sentences never trigger invented model structure', async () => {
+  let called = false
+  const result = await enhanceParse('Hi there.', 'short', config, undefined, async () => { called = true; throw Error() })
+  assert.equal(called, false)
+  assert.equal(result.segments.length, 0)
 })
